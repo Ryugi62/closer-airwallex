@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-10-16T14:31:00+00:00",
+  "base": "https://api-demo.airwallex.com",
+  "calls": [
+    {
+      "endpoint": "GET /api/v1/balances/current",
+      "status": 200,
+      "request_id": "1e8cb41c06eb42258cf9510cc752fd34",
+      "items": 46
+    },
+    {
+      "endpoint": "GET /api/v1/financial_transactions",
+      "status": 200,
+      "request_id": "9d0df1a59e7f408383e5de9a49d50064",
+      "items": 5
+    },
+    {
+      "endpoint": "GET /api/v1/transfers",
+      "status": 200,
+      "request_id": "d842a51f7c594624ad8211becaab9f35",
+      "items": 0
+    },
+    {
+      "endpoint": "GET /api/v1/global_accounts",
+      "status": 200,
+      "request_id": "e624e31c243c44a7942f753ac9903fcc",
+      "items": 1
+    },
+    {
+      "endpoint": "GET /api/v1/beneficiaries",
+      "status": 200,
+      "request_id": "31af0567deb84aefa2c4efc9dca97824",
+      "items": 7
+    },
+    {
+      "endpoint": "GET /api/v1/deposits",
+      "status": 200,
+      "request_id": "38436ab34f284f0ebb4a39389b548d01",
+      "items": 0
+    },
+    {
+      "endpoint": "GET /api/v1/fx/conversions",
+      "status": 200,
+      "request_id": "2366c55a6eae4e06a236b86cabce650b",
+      "items": 0
+    },
+    {
+      "endpoint": "GET /api/v1/balances/history",
+      "status": 200,
+      "request_id": "a9afeec106ee4d32b265006fbcd938a8",
+      "items": 5
+    }
+  ]
+}

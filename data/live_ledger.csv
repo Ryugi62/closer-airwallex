@@ -1,0 +1,4 @@
+id,direction,counterparty,currency,amount,due_date,settlement_currency,quoted_rate
+LIVE-USD-1,IN,Sandbox Customer US,USD,10000000,2026-10-10,,
+LIVE-EUR-1,IN,Sandbox Customer EU,EUR,9990000,2026-10-10,,
+LIVE-JPY-1,IN,Sandbox Customer JP,JPY,500000,2026-10-01,,
