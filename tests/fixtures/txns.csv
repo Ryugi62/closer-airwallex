@@ -1,0 +1,4 @@
+id,currency,amount,fee,status,description,created_at
+t1,USD,1000.00,0,SETTLED,payment A-1,2026-10-12T09:00:00+00:00
+t2,USD,500.00,23.50,SETTLED,wire A-2,2026-10-12T09:00:00+00:00
+t3,USD,77.00,0,SETTLED,unknown sender,2026-10-12T09:00:00+00:00

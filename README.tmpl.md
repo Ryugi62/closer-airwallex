@@ -4,6 +4,34 @@ Airwallex's Builder Guide says cash placement and reconciliation are Treasury & 
 
 > Sandbox only. No real money. The invoice ledger and the scenario pack are SYNTHETIC; the transactions in `live-smoke` / `live-cycle` are read from the real Airwallex sandbox.
 
+## What already exists, and what only Closer has
+| Existing | What it does | What it leaves | Only Closer |
+|---|---|---|---|
+| Airwallex accounting integrations (Xero, QuickBooks, NetSuite) | Hourly sync, automatic match to invoices, "exception-based review" | The non-matching items go to a person | Each leftover item gets a type and a decision: adjust inside limits, hold behind an approval card, or escalate with a reason |
+| Airwallex settlement report and Settlements API | Fee file and exchange rate per line | Docs do not cover mismatch handling | Decision layer over the same fields |
+| Xero / QuickBooks / Tipalti / JustPerform (GBP 7-115 or USD 20-129 per month) | Suggest matches, user decides | Every exception | Limits, duplicate-refund hold, audit entry with rule id and evidence transaction ids |
+| Airwallex T:0 and the Leapfin acquisition (announced 2026-06-04) | AI-native close, launch "in the coming months" | Not public yet | Open code and tests that show every limit and transition; no model in the decision path |
+Eight source types and the full table: `docs/COMPETITORS.md`.
+
+## The one number
+{{METRIC_DEFINITION}}
+
+On the bundled synthetic scenario: {{M.baseline_exceptions}} exceptions with exact match, {{M.closer_human_items}} items for a person with Closer ({{M.roi_items_moved}} fewer, {{M.roi_share_pct}}% of exceptions).
+
+## What the part Closer changes is worth (floor, not a measurement)
+{{M.roi_items_moved}} items moved off the human queue x {{MIN_PER_ITEM}} minutes x {{KRW_PER_MIN}} KRW per minute (2026 Korean statutory minimum wage, 10,320 KRW/hour) = {{M.roi_krw_per_cycle}} KRW per cycle on this pack; at the same {{M.roi_share_pct}}% share, {{M.roi_krw_per_1000_exceptions}} KRW per 1,000 exceptions. The minutes per exception is an assumption chosen low; it was not measured at a customer. Assumptions and sources: `docs/APPENDIX.md`.
+
+## When one input changes, the decision changes (generated from real cycles)
+{{SCENES}}
+`balance` here is the per-currency cycle cap headroom for automatic adjustments, not the account balance.
+
+## Try your own data
+```
+python3 -m closer reconcile --ledger tests/fixtures/ledger.csv --txns tests/fixtures/txns.csv --as-of 2026-10-31
+python3 -m closer card      # writes docs/approval-card.html (capture: docs/approval-card.png)
+```
+Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_currency,quoted_rate]`. Transaction columns: `id,currency,amount,fee,status,description,created_at`. Change the files or `--item-limit` / `--cycle-cap` and the decisions change. Refunds go to a fake gateway.
+
 ## Run it in 3 minutes (3 commands, no key needed)
 ```
 git clone <this repo> && cd airwallex-agentic-banking-2026

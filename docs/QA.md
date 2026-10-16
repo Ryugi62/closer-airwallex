@@ -1,0 +1,13 @@
+# Ten questions, draft answers (v1)
+Rehearsal by the presenter: not done. Answers use only facts in this repo; re-check numbers with `python3 -m closer metrics`.
+
+1. **Airwallex already reconciles. Why this?** Its pages describe hourly sync, automatic matching and exception review. They do not describe what happens to each leftover item. Closer is that step: a typed decision inside limits, with an approval card where money would move. I do not claim nobody reconciles; I claim the exception decision is the open part. Sources: docs/COMPETITORS.md.
+2. **Airwallex acquired Leapfin and has T:0, so is this moot?** Announced 2026-06-04 with launches "in the coming months"; I could not test it. If Airwallex ships it, the rules here are the checklist I would hold it to.
+3. **Why no LLM?** The Builder Guide says to keep amounts, limits, duplicate protection and state transitions in code. A test fails the build if domain or application code imports a model or network library. A model may only word an explanation.
+4. **How do you stop a double refund?** Each decision has a key of invoice, type, evidence ids and amount. Replaying a cycle 20 times causes 0 extra executions (tests/application/test_idempotency.py).
+5. **What does the approval protect against?** It is bound to amount, currency, counterparty and evidence. Changing any one rejects it (4 of 4 changes, tests/domain/test_approval.py).
+6. **Is the data real?** No. The ledger and scenario are synthetic and labelled. Transaction ids in the live cycle are real sandbox ids (5 funding adjustments).
+7. **Where is the real write to Airwallex?** The transfer call is implemented and unit-tested against a recorded transport. It is not executed live in this version; the demo says so.
+8. **What is 21 vs 13 worth?** 8 items x 5 minutes x 172 KRW = 6,880 KRW per cycle on this pack, a floor with an assumed 5 minutes. It is not measured at a customer, and the share comes from a synthetic pack (docs/APPENDIX.md).
+9. **What if the invoice id is missing from the transfer description?** The link is only inferred, so Closer never auto-adjusts; it escalates (rule R-INF-1, scene "evidence").
+10. **What would you do with a real customer?** Run `closer reconcile` on one month of their ledger and transactions at zero cost, compare against their exception list, and set limits from their own approval habits. No pilot exists yet.

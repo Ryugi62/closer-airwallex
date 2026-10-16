@@ -1,13 +1,15 @@
-"""Composition root + CLI. `python3 -m closer <demo|metrics|live-smoke|live-cycle|readme>`."""
+"""Composition root + CLI. `python3 -m closer <demo|metrics|scenes|card|reconcile|live-smoke|live-cycle|readme>`."""
 from __future__ import annotations
 
 import json
 import os
 import sys
+import argparse
 from datetime import date, datetime, timezone
+from decimal import Decimal
 
 from closer.adapters.airwallex_http import AirwallexGateway
-from closer.adapters.csv_ledger import load_ledger
+from closer.adapters.csv_ledger import InputError, load_ledger, load_txns
 from closer.adapters.memory import InMemoryApprovals, InMemoryKeyStore, JsonlAuditSink, ListAuditSink
 from closer.adapters.metrics import compute_metrics, new_runtime
 from closer.adapters.scenario import LABEL, scenario_pack
@@ -101,6 +103,66 @@ def cmd_live_cycle() -> int:
     return 0
 
 
+def cmd_reconcile(argv) -> int:
+    """Run one cycle on the caller's own ledger and transactions (CSV). Refunds go to a fake gateway."""
+    ap = argparse.ArgumentParser(prog="closer reconcile")
+    ap.add_argument("--ledger", required=True)
+    ap.add_argument("--txns", required=True)
+    ap.add_argument("--as-of", default=date.today().isoformat())
+    ap.add_argument("--item-limit", default="50", help="auto-adjust limit per item, every currency")
+    ap.add_argument("--cycle-cap", default="100", help="auto-adjust cap per cycle, every currency")
+    ap.add_argument("--fx-tolerance-pct", default="1.0")
+    ap.add_argument("--format", choices=("table", "json"), default="table")
+    try:
+        a = ap.parse_args(argv)
+    except SystemExit as e:
+        return int(e.code or 0)
+    try:
+        invoices, txns = load_ledger(a.ledger), load_txns(a.txns)
+        as_of = date.fromisoformat(a.as_of)
+        cur = {i.currency for i in invoices} | {t.currency for t in txns}
+        policy = Policy(item_limit={c: Decimal(a.item_limit) for c in cur}, cycle_cap={c: Decimal(a.cycle_cap) for c in cur},
+                        fx_tolerance_pct=Decimal(a.fx_tolerance_pct))
+    except (OSError, InputError, ValueError, ArithmeticError) as e:
+        print("input error: %s" % e, file=sys.stderr)
+        return 2
+    ex, store, audit, appr = new_runtime({i.counterparty: "ben-" + i.id for i in invoices})
+    r = run_cycle("USER-%s" % as_of.isoformat(), as_of, invoices, txns, policy, ex, store, audit, appr)
+    if a.format == "json":
+        rows = [{"subject": d.subject_id, "mismatch": d.finding.mismatch.value, "rule": d.rule_id, "action": d.action.value,
+                 "outcome": o, "amount": "%.2f" % d.amount, "currency": d.currency, "evidence": list(d.finding.txn_ids),
+                 "reason": d.reason} for d, o in r.outcomes]
+        print(json.dumps({"label": "USER-SUPPLIED", "as_of": a.as_of, "decisions": rows}, indent=2))
+    else:
+        print("== reconcile: USER-SUPPLIED ledger %s + transactions %s (as of %s; no network, refunds to a FAKE gateway) =="
+              % (a.ledger, a.txns, a.as_of))
+        _print_table(r)
+        for d, o in r.outcomes:
+            if d.action.value != "NONE":
+                print("  %s: %s" % (d.subject_id, d.reason))
+    return 0
+
+
+def cmd_scenes() -> int:
+    from closer.adapters.scenes import build_scenes, render_markdown
+    print(render_markdown(build_scenes()))
+    return 0
+
+
+def cmd_card() -> int:
+    from closer.adapters.card_html import render_card
+    invoices, txns, as_of, policy = scenario_pack()
+    ex, store, audit, appr = new_runtime({i.counterparty: "ben-" + i.id for i in invoices})
+    r = run_cycle("CARD", as_of, invoices, txns, policy, ex, store, audit, appr)
+    card = next(d.card for d, o in r.outcomes if o == "PENDING_APPROVAL")
+    os.makedirs(DOCS, exist_ok=True)
+    path = os.path.join(DOCS, "approval-card.html")
+    with open(path, "w") as fh:
+        fh.write(render_card(card))
+    print("wrote docs/approval-card.html for", card.invoice_id)
+    return 0
+
+
 def cmd_readme() -> int:
     from .readme import build
     with open(os.path.join(ROOT, "README.md"), "w") as fh:
@@ -111,8 +173,10 @@ def cmd_readme() -> int:
 
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "readme": cmd_readme}
+    if argv and argv[0] == "reconcile":
+        return cmd_reconcile(argv[1:])
+    cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "scenes": cmd_scenes, "card": cmd_card, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "readme": cmd_readme}
     if not argv or argv[0] not in cmds:
-        print("usage: python3 -m closer <%s>" % "|".join(cmds))
+        print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile"})))
         return 2
     return cmds[argv[0]]()

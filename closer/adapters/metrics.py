@@ -5,6 +5,7 @@ import re
 from collections import Counter
 from typing import Dict, List, Tuple
 
+from closer.application.roi import roi_krw
 from closer.application.run_cycle import run_cycle
 from closer.domain.models import NON_MISMATCH
 
@@ -55,4 +56,5 @@ def compute_metrics(invoices, txns, as_of, policy) -> Tuple[Dict, List[Dict]]:
         "audit_entries": len(audit.entries) // 21, "decisions": len(r.decisions),
     }
     m["closer_human_items"] = m["held"] + m["escalated"]
+    m.update({"roi_" + k: v for k, v in roi_krw(m["baseline_exceptions"], m["closer_human_items"]).items()})
     return m, report

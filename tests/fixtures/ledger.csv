@@ -1,0 +1,4 @@
+id,direction,counterparty,currency,amount,due_date,settlement_currency,quoted_rate
+A-1,IN,Alpha Ltd,USD,1000.00,2026-10-10,,
+A-2,IN,Beta Ltd,USD,500.00,2026-10-10,,
+A-3,IN,Gamma Ltd,USD,800.00,2026-10-01,,

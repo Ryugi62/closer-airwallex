@@ -58,3 +58,16 @@ The change in outcome: an item that a spreadsheet exact-match leaves as an "exce
 - No claim that the bundled scenario pack is real customer data: it is synthetic and labelled so everywhere.
 - Writes to Airwallex (refund transfer) are implemented in the adapter and unit-tested against a recorded transport; this stage does not execute live writes. The sandbox holds 5 funding adjustments only, so live reads feed the cycle against a synthetic ledger.
 - Not a general accounting package: no tax, no multi-entity, no bank-statement import beyond Airwallex.
+
+## 7. UI acceptance criteria (UI 수용기준) — approval card page (docs/approval-card.html)
+Copied from the house design checklist and made concrete for one static page:
+1. Mobile first: viewport meta, no horizontal scroll at 390 px and 1280 px.
+2. One screen, one question: the card asks one thing (approve this refund); one primary action.
+3. Type: body >= 16 px, nothing under 12 px, amount line >= 28 px.
+4. Spacing: 4/8 px grid, card radius >= 16 px, side gutter >= 16 px.
+5. Primary button full width, height >= 52 px; every touch target >= 44 px.
+6. Number first: the amount is the first large element.
+7. Evidence visible, not hidden: the four bound items and digest prefix are on the card.
+8. Microcopy: active voice; the warning says what happens and why (approval rejected, audited).
+9. Color: text contrast >= 4.5:1 in light and dark; one brand color; no information by color alone.
+10. No external fonts or scripts; page is static. Check: `python3 _system/ui_audit.py docs/approval-card.html` (0 fail).

@@ -9,6 +9,8 @@ import sys
 
 from closer.adapters.metrics import compute_metrics
 from closer.adapters.scenario import scenario_pack
+from closer.adapters.scenes import build_scenes, render_markdown
+from closer.application.roi import KRW_PER_MINUTE, METRIC_DEFINITION, MINUTES_PER_ITEM
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -31,7 +33,9 @@ def endpoint_table(log: dict) -> str:
 
 
 def render(template: str, metrics: dict, log: dict, tests: int) -> str:
-    out = template.replace("{{ENDPOINT_TABLE}}", endpoint_table(log)).replace("{{TESTS}}", str(tests))
+    out = (template.replace("{{ENDPOINT_TABLE}}", endpoint_table(log)).replace("{{TESTS}}", str(tests))
+           .replace("{{METRIC_DEFINITION}}", METRIC_DEFINITION).replace("{{SCENES}}", render_markdown(build_scenes()))
+           .replace("{{MIN_PER_ITEM}}", str(MINUTES_PER_ITEM)).replace("{{KRW_PER_MIN}}", str(KRW_PER_MINUTE)))
     return re.sub(r"\{\{M\.(\w+)\}\}", lambda m: str(metrics[m.group(1)]), out)
 
 
