@@ -1,6 +1,6 @@
 """ROI of only the part Closer changes: exceptions that no longer need a person. Pure arithmetic.
-Floor assumptions (stated, not measured at a customer): 5 minutes of work per exception, priced at the
-2026 Korean statutory minimum wage (10,320 KRW/hour = 172 KRW/minute; secondary sources, see docs/ROI.md)."""
+Floor assumptions (stated, not measured at a customer): 5 minutes of work per exception, priced at a low
+floor rate (10,320 KRW/hour = 172 KRW/minute)."""
 from __future__ import annotations
 
 KRW_PER_HOUR = 10320

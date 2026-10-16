@@ -1,4 +1,5 @@
 # Demo day script, 5 minutes (English, draft v1, about 600 words)
+The video is a TTS narration with subtitles; the presenter does not speak live.
 Status: draft. Not yet rehearsed by the presenter. Every number below is read from `python3 -m closer metrics` at the time of writing; re-check before recording.
 
 **0:00 - Hook (20 s)**

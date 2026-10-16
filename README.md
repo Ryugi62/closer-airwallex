@@ -1,6 +1,8 @@
 # Closer — a reconciliation-close agent on Airwallex
 
-Airwallex's Builder Guide says cash placement and reconciliation are Treasury & Ops jobs "we have not written kits for". Closer takes that gap: it reads Airwallex financial transactions, matches them to an invoice ledger, classifies every mismatch into one of six types, and then acts: adjust inside limits, hold behind one approval card, or escalate with a stated reason. Every amount, limit, duplicate guard and state transition is plain code with tests. No model is called anywhere in the decision path.
+Airwallex's Builder Guide says cash placement and reconciliation are Treasury & Ops jobs "we have not written kits for". Closer takes that gap as an open policy layer that sits on top of the exception queue of tools like Xero and Leapfin: it reads Airwallex financial transactions, matches them to an invoice ledger, classifies every mismatch into one of six types, and then acts: adjust inside limits, hold behind one approval card, or escalate with a stated reason. Every amount, limit, duplicate guard and state transition is plain code with tests. No model is called anywhere in the decision path.
+
+> Status: a pre-built prototype made for the application, before the official build window. Commits made inside the official build window start on 2026-10-25; the code is frozen until then and only documents change. Public repository URL: added at submission.
 
 > Sandbox only. No real money. The invoice ledger and the scenario pack are SYNTHETIC; the transactions in `live-smoke` / `live-cycle` are read from the real Airwallex sandbox.
 
@@ -10,16 +12,21 @@ Airwallex's Builder Guide says cash placement and reconciliation are Treasury & 
 | Airwallex accounting integrations (Xero, QuickBooks, NetSuite) | Hourly sync, automatic match to invoices, "exception-based review" | The non-matching items go to a person | Each leftover item gets a type and a decision: adjust inside limits, hold behind an approval card, or escalate with a reason |
 | Airwallex settlement report and Settlements API | Fee file and exchange rate per line | Docs do not cover mismatch handling | Decision layer over the same fields |
 | Xero / QuickBooks / Tipalti / JustPerform (GBP 7-115 or USD 20-129 per month) | Suggest matches, user decides | Every exception | Limits, duplicate-refund hold, audit entry with rule id and evidence transaction ids |
-| Airwallex T:0 and the Leapfin acquisition (announced 2026-06-04) | AI-native close, launch "in the coming months" | Not public yet | Open code and tests that show every limit and transition; no model in the decision path |
+| Airwallex T:0 and the Leapfin acquisition (announced 2026-06-04, from a search summary, page not opened) | AI-native close, launch "in the coming months" (search summary) | Details not verified | An open, testable policy layer that can sit on top of such an exception queue: every limit and transition is a test; no model in the decision path |
 Eight source types and the full table: `docs/COMPETITORS.md`.
+
+## What it prevents
+The riskiest item on the bundled scenario is a duplicate payment: 2,500 USD paid twice. Closer holds the surplus behind one approval card bound to amount, currency, counterparty and evidence, and a replay of the same cycle 20 times causes 0 extra executions. A spreadsheet exact-match shows the same case only as one more exception.
 
 ## The one number
 Items for a person: the number of invoices and bank transactions in one cycle that end held for approval or escalated, counted against the exact-match baseline exceptions (invoice id in the description, equal amount and currency, zero fee) on the same ledger and the same transactions.
 
 On the bundled synthetic scenario: 21 exceptions with exact match, 13 items for a person with Closer (8 fewer, 38.1% of exceptions).
 
+Why 8 fewer but only 7 adjusted automatically: the baseline counts an invoice and a bank transaction separately; Closer links one transaction to INV-801 by inference (never auto-adjusted), so those two baseline exceptions become one escalated item. 7 automatic adjustments + 1 merged pair = 8.
+
 ## What the part Closer changes is worth (floor, not a measurement)
-8 items moved off the human queue x 5 minutes x 172 KRW per minute (2026 Korean statutory minimum wage, 10,320 KRW/hour) = 6880 KRW per cycle on this pack; at the same 38.1% share, 327660 KRW per 1,000 exceptions. The minutes per exception is an assumption chosen low; it was not measured at a customer. Assumptions and sources: `docs/APPENDIX.md`.
+8 items moved off the human queue x 5 minutes x 172 KRW per minute (a low floor rate; a finance employee costs more) = 6880 KRW per cycle on this pack; at the same 38.1% share, 327660 KRW per 1,000 exceptions. The minutes per exception is an assumption chosen low; it was not measured at a customer. Assumptions and sources: `docs/APPENDIX.md`.
 
 ## When one input changes, the decision changes (generated from real cycles)
 SYNTHETIC scenes (not customer data)
@@ -41,9 +48,10 @@ python3 -m closer card      # writes docs/approval-card.html (capture: docs/appr
 ```
 Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_currency,quoted_rate]`. Transaction columns: `id,currency,amount,fee,status,description,created_at`. Change the files or `--item-limit` / `--cycle-cap` and the decisions change. Refunds go to a fake gateway.
 
-## Run it in 3 minutes (3 commands, no key needed)
+## Run it in 3 minutes (3 commands plus a one-line pytest install, no key needed)
 ```
-git clone <this repo> && cd airwallex-agentic-banking-2026
+git clone <this repo> && cd airwallex-agentic-banking-2026   # (public URL added at submission)
+python3 -m pip install pytest
 python3 -m pytest -q          # 71 tests, no network
 python3 -m closer demo        # full cycle, approval, replay, audit log
 ```
