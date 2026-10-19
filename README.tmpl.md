@@ -1,6 +1,6 @@
 # Closer — a reconciliation-close agent on Airwallex
 
-Airwallex's Builder Guide says cash placement and reconciliation are Treasury & Ops jobs "we have not written kits for". Closer takes that gap as an open policy layer that sits on top of the exception queue of tools like Xero and Leapfin: it reads Airwallex financial transactions, matches them to an invoice ledger, classifies every mismatch into one of six types, and then acts: adjust inside limits, hold behind one approval card, or escalate with a stated reason. Every amount, limit, duplicate guard and state transition is plain code with tests. No model is called anywhere in the decision path.
+Airwallex's Builder Guide says cash placement and reconciliation are Treasury & Ops jobs "we have not written kits for". Closer takes that gap as an open policy layer that sits on top of the exception queue of tools like Xero and Leapfin: it reads Airwallex financial transactions, matches them to an invoice ledger, classifies every mismatch into one of six types, and then acts: adjust inside limits, hold behind one approval card, or escalate with a stated reason. Every amount, limit, duplicate guard and state transition is plain code with tests. No model is called in the money path today (amount, limit, duplicate and approval decisions); from the build window a model may read free-text evidence, and its output can only become a HOLD.
 
 > Status: a pre-built prototype made for the application, before the official build window. Commits made inside the official build window start on 2026-10-25; the code is frozen until then and only documents change. Public repository URL: added at submission.
 
@@ -12,11 +12,12 @@ Airwallex's Builder Guide says cash placement and reconciliation are Treasury & 
 | Airwallex accounting integrations (Xero, QuickBooks, NetSuite) | Hourly sync, automatic match to invoices, "exception-based review" | The non-matching items go to a person | Each leftover item gets a type and a decision: adjust inside limits, hold behind an approval card, or escalate with a reason |
 | Airwallex settlement report and Settlements API | Fee file and exchange rate per line | Docs do not cover mismatch handling | Decision layer over the same fields |
 | Xero / QuickBooks / Tipalti / JustPerform (GBP 7-115 or USD 20-129 per month) | Suggest matches, user decides | Every exception | Limits, duplicate-refund hold, audit entry with rule id and evidence transaction ids |
-| Airwallex T:0 and the Leapfin acquisition (announced 2026-06-04, from a search summary, page not opened) | AI-native close, launch "in the coming months" (search summary) | Details not verified | An open, testable policy layer that can sit on top of such an exception queue: every limit and transition is a test; no model in the decision path |
+| Airwallex and Leapfin (acquisition announced 2026-06-04 in the Airwallex newsroom, opened 2026-10-20) | The release says the companies "plan to launch new product capabilities in the coming months" to simplify reconciliation; I have not tested them | Not launched or not verified | An open, testable policy layer that can sit on top of such an exception queue: every limit and transition is a test; no model in the money path |
+| HighRadius cash application (enterprise; vendor product page, opened 2026-10-20) | "Automated GL write-off uses configurable rules to write off items like bank fees, FX, and low-dollar deductions to specific GL accounts" | Items outside the configured limits | Fee, FX and small-difference write-off under limits is not unique to Closer (enterprise tools do it). What Closer adds is open code on Airwallex APIs, and duplicate refunds behind a separate approver-key signature with 0 extra executions in 20 replays |
 Eight source types and the full table: `docs/COMPETITORS.md`.
 
 ## What it prevents
-The riskiest item on the bundled scenario is a duplicate payment: 2,500 USD paid twice. Closer holds the surplus behind one approval card bound to amount, currency, counterparty and evidence, and a replay of the same cycle 20 times causes {{M.replay_extra_executions}} extra executions. A spreadsheet exact-match shows the same case only as one more exception.
+The riskiest item on the bundled scenario is a duplicate payment: 2,500 USD paid twice. Closer holds the surplus behind one approval card bound to amount, currency, counterparty and evidence, and a replay of the same cycle 20 times causes {{M.replay_extra_executions}} extra executions. The offline demo's 2,500 USD EXECUTED is a fake-gateway scene; the one real sandbox refund (HKD 2,500.00) is still PROCESSING. A spreadsheet exact-match shows the same case only as one more exception.
 
 ## The one number
 {{METRIC_DEFINITION}}
@@ -46,7 +47,7 @@ python3 -m pip install pytest
 python3 -m pytest -q          # {{TESTS}} tests, no network
 python3 -m closer demo        # full cycle, approval, replay, audit log
 ```
-Python 3.9+, standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.
+Tested on Python 3.9.6 (other versions not tested), standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.
 
 ## What it does on the bundled scenario (generated values)
 | Measure | Value |
@@ -84,4 +85,5 @@ Mismatch types: `FEE_DEDUCTED`, `FX_DIFFERENCE`, `DUPLICATE_PAYMENT`, `MISSING_P
 ## Honest limits
 - The scenario pack and ledger are synthetic. The Airwallex sandbox holds only five funding adjustments, so live mode reads real transaction ids and runs them against a synthetic ledger.
 - Writes go only to the sandbox (demo environment). One refund transfer (`POST /api/v1/transfers/create`) was executed after an approval card, and the request id is in `docs/live-write-*.json`; its beneficiary is a sandbox fixture named like the payer, not the simulated payer's bank. That one-off write was approved by an operator command, not by a customer; since then the approval is an HMAC-SHA256 signature made with a separate approver key (SPEC section 8): the executor side only verifies, a card signed with the executor key or with a one-byte-different digest is rejected as `APPROVAL_SIGNATURE_INVALID` and moves nothing. HMAC is symmetric, so the executor verifies through the approver-side verify call rather than holding the key; an asymmetric scheme (ed25519) would need a new dependency and is not built. The demo mode still sends refunds to a fake gateway and says so.
+- The invoice references in the six live deposits were written by me; how often real payers include an invoice id is not measured, and without one Closer escalates instead of adjusting. The ledger is synthetic; a customer export in Xero's format is planned from 10/25.
 - Throughput was not measured beyond the bundled pack.
