@@ -11,10 +11,11 @@ from typing import Any, Callable, Dict, List, Optional
 from closer.adapters.executors import RoutingExecutor
 from closer.adapters.memory import InMemoryApprovals, InMemoryKeyStore, ListAuditSink
 from closer.application.run_cycle import run_cycle
-from closer.domain.approval import ApprovalCard, approve
+from closer.domain.approval import ApprovalCard
 from closer.domain.models import Direction, Invoice
 from closer.domain.policy import Policy
 
+from .keys import new_signing_pair
 from .live_common import last_call, save, wait_for_new
 
 PAYER = "Closer Sandbox Customer"
@@ -38,7 +39,7 @@ def _step(r: Any) -> Dict[str, Any]:
 
 
 def run_live_write(gw: Any, beneficiary_id: str, out_dir: str, currency: str = "HKD", amount: Decimal = Decimal("2500.00"),
-                   approver: str = "operator-command", beneficiary_note: Optional[Dict[str, Any]] = None, tamper_approval: bool = False,
+                   approver: str = "approver-key", beneficiary_note: Optional[Dict[str, Any]] = None, tamper_approval: bool = False,
                    sleep: Callable[[float], None] = time.sleep, attempts: int = 20) -> Dict[str, Any]:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     ref = "INV-LW-" + stamp
@@ -70,11 +71,12 @@ def run_live_write(gw: Any, beneficiary_id: str, out_dir: str, currency: str = "
     signed = card
     if tamper_approval:
         signed = ApprovalCard(card.action, card.invoice_id, card.amount + Decimal("1"), card.currency, card.counterparty, card.evidence_txn_ids)
-    approval = approve(signed, approver)
-    log["approval"] = {"approver": approver, "card_digest": approval.card_digest}
+    authority, _executor_signer = new_signing_pair()
+    approval = authority.sign(signed, approver)
+    log["approval"] = {"approver": approver, "role": approval.role, "card_digest": approval.card_digest, "signature_scheme": "HMAC-SHA256 (approver key, local, not recorded)"}
     appr.put(inv.id, approval)
 
-    r2 = run_cycle("LW2-" + stamp, date.today(), [inv], new, policy, ex, store, audit, appr)
+    r2 = run_cycle("LW2-" + stamp, date.today(), [inv], new, policy, ex, store, audit, appr, verifier=authority.verify)
     log["after_approval"] = _step(r2)
     if ex.results:
         c = last_call(gw, CREATE)

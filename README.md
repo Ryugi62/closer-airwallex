@@ -52,7 +52,7 @@ Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_
 ```
 git clone <this repo> && cd airwallex-agentic-banking-2026   # (public URL added at submission)
 python3 -m pip install pytest
-python3 -m pytest -q          # 94 tests, no network
+python3 -m pytest -q          # 104 tests, no network
 python3 -m closer demo        # full cycle, approval, replay, audit log
 ```
 Python 3.9+, standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.
@@ -103,5 +103,5 @@ Log generated 2026-10-16T14:31:00+00:00 by `python3 -m closer live-smoke` (file:
 
 ## Honest limits
 - The scenario pack and ledger are synthetic. The Airwallex sandbox holds only five funding adjustments, so live mode reads real transaction ids and runs them against a synthetic ledger.
-- Writes go only to the sandbox (demo environment). One refund transfer (`POST /api/v1/transfers/create`) was executed after an approval card, and the request id is in `docs/live-write-*.json`; its beneficiary is a sandbox fixture named like the payer, not the simulated payer's bank. The approval was signed by an operator command, not by a customer. The demo mode still sends refunds to a fake gateway and says so.
+- Writes go only to the sandbox (demo environment). One refund transfer (`POST /api/v1/transfers/create`) was executed after an approval card, and the request id is in `docs/live-write-*.json`; its beneficiary is a sandbox fixture named like the payer, not the simulated payer's bank. That one-off write was approved by an operator command, not by a customer; since then the approval is an HMAC-SHA256 signature made with a separate approver key (SPEC section 8): the executor side only verifies, a card signed with the executor key or with a one-byte-different digest is rejected as `APPROVAL_SIGNATURE_INVALID` and moves nothing. HMAC is symmetric, so the executor verifies through the approver-side verify call rather than holding the key; an asymmetric scheme (ed25519) would need a new dependency and is not built. The demo mode still sends refunds to a fake gateway and says so.
 - Throughput was not measured beyond the bundled pack.

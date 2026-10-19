@@ -72,3 +72,13 @@ Copied from the house design checklist and made concrete for one static page:
 8. Microcopy: active voice; the warning says what happens and why (approval rejected, audited).
 9. Color: text contrast >= 4.5:1 in light and dark; one brand color; no information by color alone.
 10. No external fonts or scripts; page is static. Check: `python3 _system/ui_audit.py docs/approval-card.html` (0 fail).
+
+## 8. Approver / executor key separation (승인자·실행자 분리)
+Purpose: until now the approval was a bare digest produced by whoever ran the cycle, so "who approved" and "who executes" were the same process. An approval is now a signed object: the approver signs the card digest with the **approver key**, and the executor side only checks that signature before it moves any money. The executor never holds the approver key and signs nothing as an approver; a card signed with the executor key, or any card whose digest changed by one byte, is rejected with outcome `APPROVAL_SIGNATURE_INVALID` and the transfer gateway is not called. Signatures are HMAC-SHA256 from the Python standard library (no new dependency; the repo is standard-library only). HMAC is symmetric, so the executor checks through the approver-side `ApproverAuthority.verify` callable instead of holding the key; moving to an asymmetric scheme (ed25519) is a later change that needs a new dependency. Keys are generated locally per run and never written to the repo, logs or output.
+Role and key names: **ApproverKey**, **ExecutorKey**, **SignedApproval** (card digest, approver name, role, signature), **ApproverAuthority**.
+
+Given / When / Then
+1. Given a held refund card and a SignedApproval signed with the approver key. When execution is attempted through the executor-side verifier. Then the signature verifies and the refund executes exactly once.
+2. Given the same card signed with the executor key (role `executor`). When execution is attempted. Then it is rejected as `APPROVAL_SIGNATURE_INVALID` and the gateway is not called.
+3. Given an approver-signed approval whose card digest is changed by one byte. When execution is attempted. Then it is rejected as `APPROVAL_SIGNATURE_INVALID` and the gateway is not called.
+Verified by: tests/domain/test_signing.py, tests/application/test_signed_execution.py, tests/test_cli_demo.py.

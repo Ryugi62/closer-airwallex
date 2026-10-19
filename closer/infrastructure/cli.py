@@ -14,7 +14,7 @@ from closer.adapters.memory import InMemoryApprovals, InMemoryKeyStore, JsonlAud
 from closer.adapters.metrics import compute_metrics, new_runtime
 from closer.adapters.scenario import LABEL, scenario_pack
 from closer.application.run_cycle import run_cycle
-from closer.domain.approval import approve
+from .keys import new_signing_pair
 from closer.domain.policy import Policy
 
 from .http_transport import urllib_transport
@@ -45,9 +45,16 @@ def cmd_demo() -> int:
     card = held[0].card
     print("\n-- approval card (bound to amount, currency, counterparty, evidence) --")
     print("  invoice=%s amount=%.2f %s counterparty=%s evidence=%s" % (card.invoice_id, card.amount, card.currency, card.counterparty, list(card.evidence_txn_ids)))
-    appr.put(card.invoice_id, approve(card, "demo-approver"))
-    r2 = run_cycle("DEMO-2", as_of, invoices, txns, policy, ex, store, audit, appr)
-    print("\n-- cycle 2 after approving %s --" % card.invoice_id)
+    authority, executor_signer = new_signing_pair()
+    appr.put(card.invoice_id, executor_signer.sign(card, "executor-bot"))
+    rx = run_cycle("DEMO-1X", as_of, invoices, txns, policy, ex, store, audit, appr, verifier=authority.verify)
+    print("\n-- cycle 1b: the same card signed with the EXECUTOR key --")
+    for d, o in rx.outcomes:
+        if d.subject_id == card.invoice_id:
+            print("  %s -> %s (executor key cannot approve; transfers sent: %d)" % (d.subject_id, o, len(ex.gateway.sent)))
+    appr.put(card.invoice_id, authority.sign(card, "demo-approver"))
+    r2 = run_cycle("DEMO-2", as_of, invoices, txns, policy, ex, store, audit, appr, verifier=authority.verify)
+    print("\n-- cycle 2 after the APPROVER key signed %s --" % card.invoice_id)
     for d, o in r2.outcomes:
         if d.subject_id == card.invoice_id:
             print("  %s -> %s (refund request_id=%s... sent via FAKE gateway: %s)" % (d.subject_id, o, d.idempotency_key[:10], ex.gateway.sent[-1]["id"] if ex.gateway.sent else "-"))

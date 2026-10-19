@@ -37,7 +37,7 @@ def render_card(c: ApprovalCard) -> str:
 <div class="row"><dt>Evidence (transaction ids)</dt><dd data-bound="evidence">%s</dd></div>
 </dl>
 <div class="hash">approval binds to sha256 %s...</div>
-<div class="note">Change any of these four items after approving and the approval is rejected (audit: APPROVAL_MISMATCH). The amount is computed by code, not by a model.</div>
+<div class="note">Change any of these four items after approving and the approval is rejected (audit: APPROVAL_MISMATCH or APPROVAL_SIGNATURE_INVALID). The amount is computed by code, not by a model.</div>
 <button class="btn" type="button">Approve this card</button><button class="btn ghost" type="button">Reject</button>
 </div></div></body></html>
 """ % (_CSS, e(c.invoice_id), e("%.2f" % c.amount), e(c.currency), e("%.2f" % c.amount), e(c.currency), e(c.counterparty), ev,

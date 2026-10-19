@@ -25,3 +25,10 @@ def test_metrics_json_is_valid_and_has_required_keys():
     assert m["closer_human_items"] < m["baseline_exceptions"]
     assert m["replay_extra_executions"] == 0
     assert m["mismatch_types_seen"] >= 5
+
+
+def test_demo_rejects_executor_signed_card_then_executes_with_approver_key():
+    p = run("demo")
+    assert p.returncode == 0, p.stderr
+    assert "APPROVAL_SIGNATURE_INVALID" in p.stdout and "transfers sent: 0" in p.stdout
+    assert "APPROVER key signed" in p.stdout and "operator-command" not in p.stdout

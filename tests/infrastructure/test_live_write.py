@@ -45,7 +45,7 @@ def test_replay_after_execution_sends_nothing_more(tmp_path):
 
 def test_wrong_approval_moves_nothing(tmp_path):
     g, log = _run(tmp_path, tamper_approval=True)
-    assert log["after_approval"]["outcome"] == "APPROVAL_MISMATCH"
+    assert log["after_approval"]["outcome"] == "APPROVAL_SIGNATURE_INVALID"
     assert g.transfers == [] and log["transfer"] is None and log["result"] == "NOT_EXECUTED"
 
 
@@ -54,3 +54,9 @@ def test_no_settled_transactions_reports_without_writing(tmp_path):
     g.simulate_deposit = lambda *a, **k: {"id": "dep_x", "status": "PENDING"}
     log = run_live_write(g, beneficiary_id=BEN, out_dir=str(tmp_path), sleep=lambda s: None, attempts=2)
     assert log["result"] == "NO_TXN_APPEARED" and g.transfers == []
+
+
+def test_approval_is_approver_key_signed_and_no_key_in_log(tmp_path):
+    g, log = _run(tmp_path)
+    assert log["approval"]["role"] == "approver" and "operator-command" not in json.dumps(log)
+    assert not any(k in json.dumps(log).lower() for k in ("secret", "private_key"))

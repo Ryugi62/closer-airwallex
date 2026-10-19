@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from closer.domain.approval import verify
 from closer.domain.classifier import classify
@@ -36,7 +36,8 @@ def _advance(state: S, path: Sequence[S]) -> S:
 
 def run_cycle(cycle_id: str, as_of: date, invoices: Sequence[Invoice], txns: Sequence[BankTxn],
               policy: Policy, executor: Executor, store: KeyStore, audit: AuditSink,
-              approvals: Optional[ApprovalSource] = None, explainer: Optional[Explainer] = None) -> CycleResult:
+              approvals: Optional[ApprovalSource] = None, explainer: Optional[Explainer] = None,
+              verifier: Optional[Callable] = None) -> CycleResult:
     explainer = explainer or _PlainExplainer()
     findings = classify(invoices, txns, as_of, policy)
     decisions = decide(findings, invoices, policy)
@@ -64,7 +65,9 @@ def run_cycle(cycle_id: str, as_of: date, invoices: Sequence[Invoice], txns: Seq
             approval = approvals.find(d.finding.invoice_id or "") if approvals else None
             if approval is None:
                 outcome, new_state = "PENDING_APPROVAL", (S.HELD,)
-            elif not verify(d.card, approval):
+            elif verifier is not None and not verifier(d.card, approval):
+                outcome, new_state = "APPROVAL_SIGNATURE_INVALID", (S.HELD,)
+            elif verifier is None and not verify(d.card, approval):
                 outcome, new_state = "APPROVAL_MISMATCH", (S.HELD,)
             else:
                 executor.execute(d)
