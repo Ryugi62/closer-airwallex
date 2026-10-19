@@ -60,6 +60,10 @@ Python 3.9+, standard library only (pytest for tests). With sandbox credentials 
 | Mismatch types exercised | {{M.mismatch_types_seen}} of 6 |
 | Replayed the same cycle 20 times: extra executions | {{M.replay_extra_executions}} |
 | Audit entries per cycle (one per decision) | {{M.audit_entries}} |
+| Decisions that match the hand-written expectation (type and action) | {{M.acc_decision_correct}} of {{M.acc_labelled}} ({{M.acc_decision_accuracy_pct}}%); wrong: {{M.acc_decision_wrong}} |
+| Wrong items among the {{M.acc_human_queue_items}} sent to a person | {{M.acc_human_queue_wrong}} |
+
+The expectation is written by hand from SPEC section 4 in `closer/adapters/labels.py`, by the same author as the pack: it shows Closer agrees with its own spec on {{M.acc_labelled}} synthetic cases, not accuracy on real customer data (not measured).
 
 Mismatch types: `FEE_DEDUCTED`, `FX_DIFFERENCE`, `DUPLICATE_PAYMENT`, `MISSING_PAYMENT`, `AMOUNT_MISMATCH`, `UNMATCHED_TXN`.
 

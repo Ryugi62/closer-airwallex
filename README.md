@@ -52,7 +52,7 @@ Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_
 ```
 git clone <this repo> && cd airwallex-agentic-banking-2026   # (public URL added at submission)
 python3 -m pip install pytest
-python3 -m pytest -q          # 90 tests, no network
+python3 -m pytest -q          # 94 tests, no network
 python3 -m closer demo        # full cycle, approval, replay, audit log
 ```
 Python 3.9+, standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.
@@ -69,6 +69,10 @@ Python 3.9+, standard library only (pytest for tests). With sandbox credentials 
 | Mismatch types exercised | 6 of 6 |
 | Replayed the same cycle 20 times: extra executions | 0 |
 | Audit entries per cycle (one per decision) | 31 |
+| Decisions that match the hand-written expectation (type and action) | 31 of 31 (100.0%); wrong: 0 |
+| Wrong items among the 13 sent to a person | 0 |
+
+The expectation is written by hand from SPEC section 4 in `closer/adapters/labels.py`, by the same author as the pack: it shows Closer agrees with its own spec on 31 synthetic cases, not accuracy on real customer data (not measured).
 
 Mismatch types: `FEE_DEDUCTED`, `FX_DIFFERENCE`, `DUPLICATE_PAYMENT`, `MISSING_PAYMENT`, `AMOUNT_MISMATCH`, `UNMATCHED_TXN`.
 

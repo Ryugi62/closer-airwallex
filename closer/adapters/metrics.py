@@ -9,7 +9,9 @@ from closer.application.roi import roi_krw
 from closer.application.run_cycle import run_cycle
 from closer.domain.models import NON_MISMATCH
 
+from .accuracy import measure_accuracy
 from .executors import FakeTransferGateway, RoutingExecutor
+from .labels import SCENARIO_LABELS
 from .memory import InMemoryApprovals, InMemoryKeyStore, ListAuditSink
 
 
@@ -56,5 +58,7 @@ def compute_metrics(invoices, txns, as_of, policy) -> Tuple[Dict, List[Dict]]:
         "audit_entries": len(audit.entries) // 21, "decisions": len(r.decisions),
     }
     m["closer_human_items"] = m["held"] + m["escalated"]
+    acc = measure_accuracy(report, SCENARIO_LABELS)
+    m.update({"acc_" + k: ("n/a" if v is None else v) for k, v in acc.items()})
     m.update({"roi_" + k: v for k, v in roi_krw(m["baseline_exceptions"], m["closer_human_items"]).items()})
     return m, report
