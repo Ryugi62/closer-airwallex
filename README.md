@@ -52,7 +52,7 @@ Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_
 ```
 git clone <this repo> && cd airwallex-agentic-banking-2026   # (public URL added at submission)
 python3 -m pip install pytest
-python3 -m pytest -q          # 71 tests, no network
+python3 -m pytest -q          # 76 tests, no network
 python3 -m closer demo        # full cycle, approval, replay, audit log
 ```
 Python 3.9+, standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox.

@@ -1,0 +1,60 @@
+{
+  "generated_at": "20261019T161645Z",
+  "label": "sandbox simulation deposit; ledger SYNTHETIC; no transfer written",
+  "global_account_id": "0d685084-2ba2-4498-92b9-9aee7f2ea856",
+  "reference": "LIVE-DEP-20261019T161645Z",
+  "deposit": {
+    "id": "b3e9bedd-3a77-4db2-9176-addbc12a2fdf",
+    "status": "PENDING",
+    "request_id": "d901311cdaae4a549cb90910bc03da44",
+    "http": 201
+  },
+  "transaction": {
+    "id": "ftx_s-m-3Tp3TbKRdq3bwSov3w",
+    "currency": "HKD",
+    "amount": "1000",
+    "fee": "0",
+    "status": "SETTLED",
+    "description": "LIVE-DEP-20261019T161645Z",
+    "created_at": "2026-10-19T16:16:46.728+00:00"
+  },
+  "decision": {
+    "subject": "LIVE-DEP-20261019T161645Z",
+    "mismatch": "AMOUNT_MISMATCH",
+    "rule_id": "R-AMT-2",
+    "action": "ESCALATE",
+    "outcome": "ESCALATED",
+    "evidence_txn_ids": [
+      "ftx_s-m-3Tp3TbKRdq3bwSov3w"
+    ],
+    "reason": "amount differs from invoice: 12.00 HKD is outside the automatic limits"
+  },
+  "result": "OK",
+  "calls": [
+    {
+      "endpoint": "GET /api/v1/financial_transactions",
+      "status": 200,
+      "request_id": "400fcd8ba57449319b8bce83d1d6e1b2",
+      "items": 5
+    },
+    {
+      "endpoint": "GET /api/v1/global_accounts",
+      "status": 200,
+      "request_id": "bbc40537c590465c815cc344310aedd6",
+      "items": 1
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "d901311cdaae4a549cb90910bc03da44",
+      "items": null
+    },
+    {
+      "endpoint": "GET /api/v1/financial_transactions",
+      "status": 200,
+      "request_id": "7d1e5f128ee9494c934c8ef6a6448671",
+      "items": 6
+    }
+  ],
+  "path": "/Users/ryugi62/dev/airwallex-agentic-banking-2026/out/live-deposit-20261019T161645Z.json"
+}

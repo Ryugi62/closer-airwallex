@@ -103,6 +103,24 @@ def cmd_live_cycle() -> int:
     return 0
 
 
+def cmd_live_deposit() -> int:
+    """LIVE (sandbox write): creates one simulation deposit, then decides it. Never run by tests."""
+    from .live_deposit import run_live_deposit
+    gw = _gateway()
+    if gw is None:
+        print("no sandbox credentials; live-deposit skipped")
+        return 3
+    try:
+        log = run_live_deposit(gw, out_dir=os.path.join(ROOT, "out"))
+    except Exception as e:  # keep HTTP status and raw body; do not invent a result
+        print("live-deposit failed:", e)
+        for c in gw.call_log:
+            print(c)
+        return 1
+    print(json.dumps({k: v for k, v in log.items() if k != "calls"}, indent=2))
+    return 0 if log["result"] == "OK" else 1
+
+
 def cmd_reconcile(argv) -> int:
     """Run one cycle on the caller's own ledger and transactions (CSV). Refunds go to a fake gateway."""
     ap = argparse.ArgumentParser(prog="closer reconcile")
@@ -175,7 +193,7 @@ def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if argv and argv[0] == "reconcile":
         return cmd_reconcile(argv[1:])
-    cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "scenes": cmd_scenes, "card": cmd_card, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "readme": cmd_readme}
+    cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "scenes": cmd_scenes, "card": cmd_card, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "live-deposit": cmd_live_deposit, "readme": cmd_readme}
     if not argv or argv[0] not in cmds:
         print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile"})))
         return 2

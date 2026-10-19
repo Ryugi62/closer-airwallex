@@ -43,12 +43,15 @@ class AirwallexGateway:
         status, hdr, body = self._t(method, path, headers, json.dumps(payload) if payload is not None else None)
         low = {k.lower(): v for k, v in hdr.items()}
         rid = next((low[h] for h in REQUEST_ID_HEADERS if h in low), None)
-        data = json.loads(body) if body else {}
+        try:
+            data = json.loads(body) if body else {}
+        except ValueError:
+            data = {"_raw": body}
         count = len(data["items"]) if isinstance(data, dict) and "items" in data else (len(data) if isinstance(data, list) else None)
         self.call_log.append({"endpoint": "%s %s" % (method, path.split("?")[0]), "status": status,
                               "request_id": rid, "items": count})
         if status >= 400:
-            raise AirwallexError("%s %s -> HTTP %s" % (method, path, status))
+            raise AirwallexError("%s %s -> HTTP %s %s" % (method, path, status, body[:500]))
         return data
 
     # --- reads --------------------------------------------------------------
@@ -85,6 +88,12 @@ class AirwallexGateway:
 
     def balances_history(self) -> List[dict]:
         return self._request("GET", "/api/v1/balances/history?page_size=10").get("items", [])
+
+    # --- sandbox-only simulation (demo environment): creates one inbound deposit, moves no money out ---
+    def simulate_deposit(self, global_account_id: str, amount: str, currency: str, reference: str) -> dict:
+        return self._request("POST", "/api/v1/simulation/deposit/create", {
+            "global_account_id": global_account_id, "amount": float(Decimal(str(amount))),
+            "currency": currency, "payer_name": "Closer Sandbox Customer", "reference": reference})
 
     # --- write (refund of a held duplicate; idempotency key doubles as request_id) ---
     def create_transfer(self, idempotency_key: str, beneficiary_id: str, amount: Decimal, currency: str, reason: str) -> str:
