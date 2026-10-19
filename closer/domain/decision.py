@@ -71,6 +71,8 @@ def decide(findings: Sequence[Finding], invoices: Sequence[Invoice], policy: Pol
             else:
                 ok_rule, bad_rule, why = "R-AMT-1", "R-AMT-2", "amount differs from invoice"
                 eligible = amount <= policy.rounding_tolerance
+                if f.paid_currency:
+                    why, eligible = "payment arrived in %s but the invoice is in %s" % (f.paid_currency, cur), False
             if not eligible:
                 action, rule = Action.ESCALATE, bad_rule
                 reason = "%s: %.2f %s is outside the automatic limits" % (why, amount, cur)

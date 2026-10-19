@@ -69,6 +69,10 @@ def classify(invoices: Sequence[Invoice], txns: Sequence[BankTxn], as_of: date, 
         gross = sum((abs(t.amount) for t in linked), Decimal("0"))
         fee = sum((abs(t.fee) for t in linked), Decimal("0"))
         tol = policy.rounding_tolerance
+        other = next((t.currency for t in linked if t.currency != cur), None)
+        if other:  # a reference link says nothing about currency: money that arrived in another currency is not a match
+            findings.append(Finding(inv.id, M.AMOUNT_MISMATCH, ids, link, expected, cur, paid_currency=other))
+            continue
         if len(linked) >= 2 and gross - expected > tol:
             findings.append(Finding(inv.id, M.DUPLICATE_PAYMENT, ids, link, gross - expected, cur))
         elif inv.fx and gross != expected:

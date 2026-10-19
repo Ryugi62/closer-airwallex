@@ -72,3 +72,12 @@ def test_idempotency_key_is_stable_and_distinct():
     b = run([inv()], [txn(fee="10")])[0].idempotency_key
     c = run([inv()], [txn(fee="11")])[0].idempotency_key
     assert a == b and a != c
+
+
+def test_payment_in_other_currency_always_escalates_with_currency_reason():
+    from closer.domain.classifier import classify
+    from closer.domain.decision import decide
+    from closer.domain.models import Action
+    i = inv(amount="0.40", cur="USD")  # tiny enough to look like rounding if currency were ignored
+    ds = decide(classify([i], [txn(amount="0.40", cur="HKD")], AS_OF, policy()), [i], policy())
+    assert ds[0].action == Action.ESCALATE and "HKD" in ds[0].reason and "USD" in ds[0].reason

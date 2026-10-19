@@ -56,8 +56,8 @@ The change in outcome: an item that a spreadsheet exact-match leaves as an "exce
 ## 6. Non-goals (비목표)
 - No model training. No real money. No production credentials.
 - No claim that the bundled scenario pack is real customer data: it is synthetic and labelled so everywhere.
-- Writes to Airwallex (refund transfer) are implemented in the adapter and unit-tested against a recorded transport; this stage does not execute live writes. The sandbox holds 5 funding adjustments only, so live reads feed the cycle against a synthetic ledger.
-- Sandbox-only simulation deposit (demo environment) is allowed to produce one live transaction for the decision cycle; refund/transfer writes stay unexecuted.
+- Writes to Airwallex run only in the sandbox (demo environment): one refund/transfer executed after an approval card, with request id recorded; production writes stay out of scope. The refund goes to a pre-existing sandbox beneficiary, not to the simulated payer. The sandbox held 5 funding adjustments before the simulation deposits, so live decisions use a synthetic ledger against real sandbox transactions.
+- Sandbox-only simulation deposits (demo environment) are allowed to produce live transactions for the decision cycle.
 - Not a general accounting package: no tax, no multi-entity, no bank-statement import beyond Airwallex.
 
 ## 7. UI acceptance criteria (UI 수용기준) — approval card page (docs/approval-card.html)

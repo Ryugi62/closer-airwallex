@@ -1,0 +1,142 @@
+{
+  "generated_at": "20261019T162550Z",
+  "label": "sandbox (demo environment) write; ledger SYNTHETIC; beneficiary is a pre-existing sandbox beneficiary",
+  "invoice": "INV-LW-20261019T162550Z",
+  "beneficiary": {
+    "id": "7379ed87-c35a-4977-80fc-d221fa8f2c54",
+    "company_name": "Closer Sandbox Customer",
+    "account_currency": "HKD",
+    "label": "sandbox fixture, not the simulated payer's bank",
+    "create_request_id": "a6776bb1980c4db89688765c1215017a"
+  },
+  "deposits": [
+    {
+      "id": "1610c9fc-b714-4fab-beec-1f95b44c0be1",
+      "status": "PENDING",
+      "request_id": "b583f8dbf8874d5abab8f820c1e082d8",
+      "http": 201
+    },
+    {
+      "id": "14ad86e6-6d29-4a33-8303-42ced7178b22",
+      "status": "PENDING",
+      "request_id": "940205b331694352a08956ae9f2ff3ee",
+      "http": 201
+    }
+  ],
+  "transactions": [
+    {
+      "id": "ftx_FK2G5m0pSjODA0LO1xeLIg",
+      "currency": "HKD",
+      "amount": "2500",
+      "status": "SETTLED"
+    },
+    {
+      "id": "ftx_FhDJ_LcUT6u-7B-VtEwL4Q",
+      "currency": "HKD",
+      "amount": "2500",
+      "status": "SETTLED"
+    }
+  ],
+  "approval_card": {
+    "action": "REFUND_SURPLUS",
+    "invoice_id": "INV-LW-20261019T162550Z",
+    "amount": "2500.00",
+    "currency": "HKD",
+    "counterparty": "Closer Sandbox Customer",
+    "evidence_txn_ids": [
+      "ftx_FhDJ_LcUT6u-7B-VtEwL4Q",
+      "ftx_FK2G5m0pSjODA0LO1xeLIg"
+    ],
+    "digest": "8718737918f318d0ff54e7d298f0a43f5f71ce0e9126cada1a4820441d4ab3fc"
+  },
+  "approval": {
+    "approver": "operator-command",
+    "card_digest": "8718737918f318d0ff54e7d298f0a43f5f71ce0e9126cada1a4820441d4ab3fc"
+  },
+  "before_approval": {
+    "mismatch": "DUPLICATE_PAYMENT",
+    "rule_id": "R-DUP-1",
+    "action": "HOLD_FOR_APPROVAL",
+    "outcome": "PENDING_APPROVAL"
+  },
+  "after_approval": {
+    "mismatch": "DUPLICATE_PAYMENT",
+    "rule_id": "R-DUP-1",
+    "action": "HOLD_FOR_APPROVAL",
+    "outcome": "EXECUTED"
+  },
+  "replay": {
+    "mismatch": "DUPLICATE_PAYMENT",
+    "rule_id": "R-DUP-1",
+    "action": "HOLD_FOR_APPROVAL",
+    "outcome": "SKIPPED_DUPLICATE"
+  },
+  "transfer": {
+    "id": "0c7569df-69d7-4485-8653-f442dae76425",
+    "status": "SCHEDULED",
+    "request_id": "66fa42ff33cd9cd58cc2ad4f",
+    "http": 201,
+    "airwallex_request_id": "3be9243dece940ffb563abeb18b6fa78",
+    "amount": "2500.00",
+    "currency": "HKD"
+  },
+  "result": "OK",
+  "audit_entries": 3,
+  "calls": [
+    {
+      "endpoint": "GET /api/v1/beneficiaries",
+      "status": 200,
+      "request_id": "79771757ad75472394c97e1a9800ec1e",
+      "items": 8
+    },
+    {
+      "endpoint": "POST /api/v1/beneficiaries/create",
+      "status": 201,
+      "request_id": "a6776bb1980c4db89688765c1215017a",
+      "items": null
+    },
+    {
+      "endpoint": "GET /api/v1/financial_transactions",
+      "status": 200,
+      "request_id": "ce8edf90229d425e9f5f785978d8c817",
+      "items": 23
+    },
+    {
+      "endpoint": "GET /api/v1/global_accounts",
+      "status": 200,
+      "request_id": "0d92a7a5eebb4532acf2b1ff626bb7a3",
+      "items": 1
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "b583f8dbf8874d5abab8f820c1e082d8",
+      "items": null
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "940205b331694352a08956ae9f2ff3ee",
+      "items": null
+    },
+    {
+      "endpoint": "GET /api/v1/financial_transactions",
+      "status": 200,
+      "request_id": "9477371aa7b14cfca890fdb8814f14c6",
+      "items": 25
+    },
+    {
+      "endpoint": "POST /api/v1/transfers/create",
+      "status": 201,
+      "request_id": "3be9243dece940ffb563abeb18b6fa78",
+      "items": null
+    },
+    {
+      "endpoint": "GET /api/v1/transfers/0c7569df-69d7-4485-8653-f442dae76425",
+      "status": 200,
+      "request_id": "9b5ae6d0e53a4a688f47e53f7383fdbb",
+      "items": null
+    }
+  ],
+  "path": "/Users/ryugi62/dev/airwallex-agentic-banking-2026/docs/live-write-20261019T162550Z.json"
+}

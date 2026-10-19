@@ -89,6 +89,7 @@ class Finding:
     diff: Decimal
     currency: str
     drift_pct: Optional[Decimal] = None
+    paid_currency: Optional[str] = None
 
 
 @dataclass(frozen=True)

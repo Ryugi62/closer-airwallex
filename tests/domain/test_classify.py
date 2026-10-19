@@ -61,3 +61,9 @@ def test_inferred_link_when_no_reference_and_unique_candidate():
 def test_six_mismatch_types_exist():
     real = {m for m in M if m not in (M.MATCHED, M.NOT_DUE, M.NOT_SETTLED)}
     assert len(real) == 6
+
+
+def test_reference_linked_payment_in_other_currency_is_an_amount_mismatch_not_a_match():
+    fs = classify([inv(amount="400.00", cur="USD")], [txn(amount="400.00", cur="HKD")], AS_OF, policy())
+    assert [(f.invoice_id, f.mismatch, f.paid_currency) for f in fs] == [("INV-1", M.AMOUNT_MISMATCH, "HKD")]
+    assert fs[0].diff == 400 and fs[0].currency == "USD"

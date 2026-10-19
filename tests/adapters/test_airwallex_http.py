@@ -63,3 +63,23 @@ def test_create_transfer_uses_idempotency_key_as_request_id():
     out = g.create_transfer(idempotency_key="abc123", beneficiary_id="b1", amount=D("12.50"), currency="USD", reason="refund")
     sent = json.loads(t.calls[-1][3])
     assert sent["request_id"] == "abc123" and sent["transfer_amount"] == 12.5 and out == "tr_1"
+
+
+def test_create_transfer_sends_local_transfer_method_and_keeps_response():
+    g, t = gw({("POST", "/api/v1/transfers/create"): (201, {"x-request-id": "r3"}, {"id": "tr_2", "status": "PAID"})})
+    g.create_transfer(idempotency_key="k1", beneficiary_id="b1", amount=D("5"), currency="USD", reason="refund")
+    assert json.loads(t.calls[-1][3])["transfer_method"] == "LOCAL"
+    assert g.last_response == {"id": "tr_2", "status": "PAID"} and g.call_log[-1]["request_id"] == "r3"
+
+
+def test_get_transfer_reads_one_transfer_by_id():
+    g, _ = gw({("GET", "/api/v1/transfers/tr_2"): (200, {"x-request-id": "r4"}, {"id": "tr_2", "status": "PAID"})})
+    assert g.get_transfer("tr_2")["status"] == "PAID" and g.call_log[-1]["endpoint"] == "GET /api/v1/transfers/tr_2"
+
+
+def test_create_beneficiary_hkd_posts_company_with_hkd_local_account():
+    g, t = gw({("POST", "/api/v1/beneficiaries/create"): (201, {"x-request-id": "r5"}, {"id": "ben_1"})})
+    assert g.create_beneficiary_hkd("rq1", "Acme Ltd")["id"] == "ben_1"
+    sent = json.loads(t.calls[-1][3])
+    assert sent["request_id"] == "rq1" and sent["beneficiary"]["company_name"] == "Acme Ltd"
+    assert sent["beneficiary"]["bank_details"]["account_currency"] == "HKD" and sent["transfer_methods"] == ["LOCAL"]

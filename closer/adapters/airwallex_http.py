@@ -26,6 +26,7 @@ class AirwallexGateway:
         self._api_key = api_key
         self._token: Optional[str] = None
         self.call_log: List[Dict[str, Any]] = []
+        self.last_response: Any = None
 
     # --- transport plumbing -------------------------------------------------
     def _login(self) -> str:
@@ -50,6 +51,7 @@ class AirwallexGateway:
         count = len(data["items"]) if isinstance(data, dict) and "items" in data else (len(data) if isinstance(data, list) else None)
         self.call_log.append({"endpoint": "%s %s" % (method, path.split("?")[0]), "status": status,
                               "request_id": rid, "items": count})
+        self.last_response = data
         if status >= 400:
             raise AirwallexError("%s %s -> HTTP %s %s" % (method, path, status, body[:500]))
         return data
@@ -74,6 +76,9 @@ class AirwallexGateway:
     def list_transfers(self) -> List[dict]:
         return self._request("GET", "/api/v1/transfers?page_num=0&page_size=10").get("items", [])
 
+    def get_transfer(self, transfer_id: str) -> dict:
+        return self._request("GET", "/api/v1/transfers/%s" % transfer_id)
+
     def list_global_accounts(self) -> List[dict]:
         return self._request("GET", "/api/v1/global_accounts").get("items", [])
 
@@ -95,11 +100,22 @@ class AirwallexGateway:
             "global_account_id": global_account_id, "amount": float(Decimal(str(amount))),
             "currency": currency, "payer_name": "Closer Sandbox Customer", "reference": reference})
 
+    # --- sandbox fixture: a company beneficiary with an HKD local account (the sandbox had none) ---
+    def create_beneficiary_hkd(self, request_id: str, company_name: str) -> dict:
+        return self._request("POST", "/api/v1/beneficiaries/create", {
+            "request_id": request_id, "nickname": company_name + " (HKD)", "transfer_methods": ["LOCAL"], "payer_entity_type": "COMPANY",
+            "beneficiary": {"entity_type": "COMPANY", "company_name": company_name,
+                            "address": {"country_code": "HK", "city": "Hong Kong", "street_address": "1 Queen's Road Central", "postcode": "000000"},
+                            "bank_details": {"account_currency": "HKD", "account_name": company_name, "account_number": "123456789012",
+                                             "bank_country_code": "HK", "local_clearing_system": "FPS",
+                                             "account_routing_type1": "bank_code", "account_routing_value1": "016",
+                                             "account_routing_type2": "branch_code", "account_routing_value2": "478"}}})
+
     # --- write (refund of a held duplicate; idempotency key doubles as request_id) ---
     def create_transfer(self, idempotency_key: str, beneficiary_id: str, amount: Decimal, currency: str, reason: str) -> str:
         data = self._request("POST", "/api/v1/transfers/create", {
             "request_id": idempotency_key, "beneficiary_id": beneficiary_id,
-            "source_currency": currency, "transfer_currency": currency,
+            "source_currency": currency, "transfer_currency": currency, "transfer_method": "LOCAL",
             "transfer_amount": float(amount), "reason": reason, "reference": idempotency_key[:20],
         })
         return data["id"]

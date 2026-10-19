@@ -1,0 +1,242 @@
+{
+  "generated_at": "20261019T162540Z",
+  "label": "sandbox (demo environment) simulation deposits; ledger SYNTHETIC; no transfer written",
+  "deposits": [
+    {
+      "kind": "fx",
+      "reference": "LD-FX-20261019T162540Z",
+      "amount": "8350.00",
+      "currency": "HKD",
+      "id": "0344626a-6633-4b22-8862-d245c8f886e8",
+      "status": "PENDING",
+      "request_id": "de02dd75602f47f49bb5c9d1dade8404",
+      "http": 201
+    },
+    {
+      "kind": "amt",
+      "reference": "LD-AMT-20261019T162540Z",
+      "amount": "388.00",
+      "currency": "HKD",
+      "id": "90ab3071-11b2-4796-a0f4-05404d087f7c",
+      "status": "PENDING",
+      "request_id": "523e3c165c4643d28bbeb2f48debe3ce",
+      "http": 201
+    },
+    {
+      "kind": "dup",
+      "reference": "LD-DUP-20261019T162540Z",
+      "amount": "750.00",
+      "currency": "HKD",
+      "id": "dc445733-a712-4520-9508-9fa274545e4d",
+      "status": "PENDING",
+      "request_id": "5599b56fd3a047edb22ace9f59c3406b",
+      "http": 201
+    },
+    {
+      "kind": "dup",
+      "reference": "LD-DUP-20261019T162540Z",
+      "amount": "750.00",
+      "currency": "HKD",
+      "id": "659fad47-fd8c-460f-b41e-6603cec248fb",
+      "status": "PENDING",
+      "request_id": "6e5d03a6bc9443efa4b331bb4ff4a789",
+      "http": 201
+    },
+    {
+      "kind": "unk",
+      "reference": "UNKNOWN-REF-20261019T162540Z",
+      "amount": "321.00",
+      "currency": "HKD",
+      "id": "665fbeea-8698-4ff0-adf9-7af4434435c0",
+      "status": "PENDING",
+      "request_id": "2f09c03b052944caad9fcd51429b38a1",
+      "http": 201
+    },
+    {
+      "kind": "cur",
+      "reference": "LD-CUR-20261019T162540Z",
+      "amount": "400.00",
+      "currency": "USD",
+      "id": "00fe6bb4-1ea2-4ee7-b1c0-eb1e7a276101",
+      "status": "PENDING",
+      "request_id": "80026c47cdd24588b58fe57192d22c41",
+      "http": 201
+    }
+  ],
+  "transactions": [
+    {
+      "id": "ftx_AP5rtB6iTuexwOseeidhAQ",
+      "currency": "HKD",
+      "amount": "400",
+      "fee": "0",
+      "status": "SETTLED",
+      "description": "LD-CUR-20261019T162540Z"
+    },
+    {
+      "id": "ftx_Zl--6oaYT_Ct-Xr0Q0Q1wA",
+      "currency": "HKD",
+      "amount": "321",
+      "fee": "0",
+      "status": "SETTLED",
+      "description": "UNKNOWN-REF-20261019T162540Z"
+    },
+    {
+      "id": "ftx_ZZ-tR_2MRg-0HmYDzsJI-w",
+      "currency": "HKD",
+      "amount": "750",
+      "fee": "0",
+      "status": "SETTLED",
+      "description": "LD-DUP-20261019T162540Z"
+    },
+    {
+      "id": "ftx_3ERXM6cSRSCVCJ-idFReTQ",
+      "currency": "HKD",
+      "amount": "750",
+      "fee": "0",
+      "status": "SETTLED",
+      "description": "LD-DUP-20261019T162540Z"
+    },
+    {
+      "id": "ftx_kKswcRGyR5ag9AVATQh_fA",
+      "currency": "HKD",
+      "amount": "388",
+      "fee": "0",
+      "status": "SETTLED",
+      "description": "LD-AMT-20261019T162540Z"
+    },
+    {
+      "id": "ftx_A0RiamYzSyKIYtJFyPiG6A",
+      "currency": "HKD",
+      "amount": "8350",
+      "fee": "0",
+      "status": "SETTLED",
+      "description": "LD-FX-20261019T162540Z"
+    }
+  ],
+  "decisions": [
+    {
+      "subject": "LD-AMT-20261019T162540Z",
+      "mismatch": "AMOUNT_MISMATCH",
+      "rule_id": "R-AMT-2",
+      "action": "ESCALATE",
+      "outcome": "ESCALATED",
+      "evidence_txn_ids": [
+        "ftx_kKswcRGyR5ag9AVATQh_fA"
+      ],
+      "amount": "12.00",
+      "currency": "HKD",
+      "reason": "amount differs from invoice: 12.00 HKD is outside the automatic limits"
+    },
+    {
+      "subject": "LD-CUR-20261019T162540Z",
+      "mismatch": "AMOUNT_MISMATCH",
+      "rule_id": "R-AMT-2",
+      "action": "ESCALATE",
+      "outcome": "ESCALATED",
+      "evidence_txn_ids": [
+        "ftx_AP5rtB6iTuexwOseeidhAQ"
+      ],
+      "amount": "400.00",
+      "currency": "USD",
+      "reason": "payment arrived in HKD but the invoice is in USD: 400.00 USD is outside the automatic limits"
+    },
+    {
+      "subject": "LD-DUP-20261019T162540Z",
+      "mismatch": "DUPLICATE_PAYMENT",
+      "rule_id": "R-DUP-1",
+      "action": "HOLD_FOR_APPROVAL",
+      "outcome": "PENDING_APPROVAL",
+      "evidence_txn_ids": [
+        "ftx_3ERXM6cSRSCVCJ-idFReTQ",
+        "ftx_ZZ-tR_2MRg-0HmYDzsJI-w"
+      ],
+      "amount": "750.00",
+      "currency": "HKD",
+      "reason": "2 settled transactions for one invoice; surplus 750.00 HKD needs approval to refund"
+    },
+    {
+      "subject": "LD-FX-20261019T162540Z",
+      "mismatch": "FX_DIFFERENCE",
+      "rule_id": "R-FX-1",
+      "action": "AUTO_ADJUST",
+      "outcome": "EXECUTED",
+      "evidence_txn_ids": [
+        "ftx_A0RiamYzSyKIYtJFyPiG6A"
+      ],
+      "amount": "50.00",
+      "currency": "HKD",
+      "reason": "settled at a different rate than quoted (drift 0.60%): 50.00 HKD adjusted inside limits"
+    },
+    {
+      "subject": "ftx_Zl--6oaYT_Ct-Xr0Q0Q1wA",
+      "mismatch": "UNMATCHED_TXN",
+      "rule_id": "R-UNM-1",
+      "action": "ESCALATE",
+      "outcome": "ESCALATED",
+      "evidence_txn_ids": [
+        "ftx_Zl--6oaYT_Ct-Xr0Q0Q1wA"
+      ],
+      "amount": "321.00",
+      "currency": "HKD",
+      "reason": "transaction matches no invoice; funds are not allocated to anyone"
+    }
+  ],
+  "result": "OK",
+  "calls": [
+    {
+      "endpoint": "GET /api/v1/financial_transactions",
+      "status": 200,
+      "request_id": "167249d161804b859b0a90d173807a79",
+      "items": 17
+    },
+    {
+      "endpoint": "GET /api/v1/global_accounts",
+      "status": 200,
+      "request_id": "9355a9c0590541899dcb2af9bff942f4",
+      "items": 1
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "de02dd75602f47f49bb5c9d1dade8404",
+      "items": null
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "523e3c165c4643d28bbeb2f48debe3ce",
+      "items": null
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "5599b56fd3a047edb22ace9f59c3406b",
+      "items": null
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "6e5d03a6bc9443efa4b331bb4ff4a789",
+      "items": null
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "2f09c03b052944caad9fcd51429b38a1",
+      "items": null
+    },
+    {
+      "endpoint": "POST /api/v1/simulation/deposit/create",
+      "status": 201,
+      "request_id": "80026c47cdd24588b58fe57192d22c41",
+      "items": null
+    },
+    {
+      "endpoint": "GET /api/v1/financial_transactions",
+      "status": 200,
+      "request_id": "87e3f0af47c94261a8799b1bf8ca6ab6",
+      "items": 23
+    }
+  ],
+  "path": "/Users/ryugi62/dev/airwallex-agentic-banking-2026/docs/live-deposits-20261019T162540Z.json"
+}

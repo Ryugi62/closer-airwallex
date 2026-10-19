@@ -1,4 +1,4 @@
-"""Composition root + CLI. `python3 -m closer <demo|metrics|scenes|card|reconcile|live-smoke|live-cycle|readme>`."""
+"""Composition root + CLI. `python3 -m closer <demo|metrics|scenes|card|reconcile|live-smoke|live-cycle|live-deposits|live-write|readme>`."""
 from __future__ import annotations
 
 import json
@@ -121,6 +121,56 @@ def cmd_live_deposit() -> int:
     return 0 if log["result"] == "OK" else 1
 
 
+def _demo_gateway():
+    from .http_transport import BASE
+    if "api-demo" not in BASE:
+        raise SystemExit("refusing: live scenes run only against the sandbox (demo environment)")
+    return _gateway()
+
+
+def cmd_live_deposits() -> int:
+    """LIVE (sandbox write): several simulation deposits of different kinds, one decision each. Never run by tests."""
+    from .live_deposits import run_live_deposits
+    gw = _demo_gateway()
+    if gw is None:
+        print("no sandbox credentials; live-deposits skipped")
+        return 3
+    try:
+        log = run_live_deposits(gw, out_dir=DOCS)
+    except Exception as e:
+        print("live-deposits failed:", e)
+        for c in gw.call_log:
+            print(c)
+        return 1
+    print(json.dumps({k: v for k, v in log.items() if k != "calls"}, indent=2))
+    return 0 if log["result"] == "OK" else 1
+
+
+def cmd_live_write() -> int:
+    """LIVE (sandbox write): duplicate deposit pair -> approval card -> one refund transfer. Never run by tests."""
+    from .live_write import run_live_write
+    gw = _demo_gateway()
+    if gw is None:
+        print("no sandbox credentials; live-write skipped")
+        return 3
+    try:
+        from .live_write import PAYER
+        found = next((b for b in gw.list_beneficiaries() if b["beneficiary"].get("bank_details", {}).get("account_name") == PAYER
+                      and b["beneficiary"].get("bank_details", {}).get("account_currency") == "HKD"), None)
+        if found is None:  # the sandbox holds no HKD beneficiary: create one named like the payer (sandbox fixture)
+            found = gw.create_beneficiary_hkd("closer-ben-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"), PAYER)
+        note = {"id": found["id"], "company_name": PAYER, "account_currency": "HKD", "label": "sandbox fixture, not the simulated payer's bank",
+                "create_request_id": gw.call_log[-1]["request_id"] if gw.call_log[-1]["endpoint"].endswith("beneficiaries/create") else None}
+        log = run_live_write(gw, beneficiary_id=found["id"], beneficiary_note=note, out_dir=DOCS)
+    except Exception as e:  # keep HTTP status and raw body; do not invent a result
+        print("live-write failed:", e)
+        for c in gw.call_log:
+            print(c)
+        return 1
+    print(json.dumps({k: v for k, v in log.items() if k != "calls"}, indent=2))
+    return 0 if log["result"] == "OK" else 1
+
+
 def cmd_reconcile(argv) -> int:
     """Run one cycle on the caller's own ledger and transactions (CSV). Refunds go to a fake gateway."""
     ap = argparse.ArgumentParser(prog="closer reconcile")
@@ -193,7 +243,7 @@ def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if argv and argv[0] == "reconcile":
         return cmd_reconcile(argv[1:])
-    cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "scenes": cmd_scenes, "card": cmd_card, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "live-deposit": cmd_live_deposit, "readme": cmd_readme}
+    cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "scenes": cmd_scenes, "card": cmd_card, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "live-deposit": cmd_live_deposit, "live-deposits": cmd_live_deposits, "live-write": cmd_live_write, "readme": cmd_readme}
     if not argv or argv[0] not in cmds:
         print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile"})))
         return 2

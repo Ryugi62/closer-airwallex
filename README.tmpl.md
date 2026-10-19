@@ -4,7 +4,7 @@ Airwallex's Builder Guide says cash placement and reconciliation are Treasury & 
 
 > Status: a pre-built prototype made for the application, before the official build window. Commits made inside the official build window start on 2026-10-25; the code is frozen until then and only documents change. Public repository URL: added at submission.
 
-> Sandbox only. No real money. The invoice ledger and the scenario pack are SYNTHETIC; the transactions in `live-smoke` / `live-cycle` are read from the real Airwallex sandbox.
+> Sandbox only. No real money. The invoice ledger and the scenario pack are SYNTHETIC; the transactions in `live-smoke` / `live-cycle` / `live-deposits` / `live-write` are real Airwallex sandbox (demo environment) data.
 
 ## What already exists, and what only Closer has
 | Existing | What it does | What it leaves | Only Closer |
@@ -46,7 +46,7 @@ python3 -m pip install pytest
 python3 -m pytest -q          # {{TESTS}} tests, no network
 python3 -m closer demo        # full cycle, approval, replay, audit log
 ```
-Python 3.9+, standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox.
+Python 3.9+, standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.
 
 ## What it does on the bundled scenario (generated values)
 | Measure | Value |
@@ -79,5 +79,5 @@ Mismatch types: `FEE_DEDUCTED`, `FX_DIFFERENCE`, `DUPLICATE_PAYMENT`, `MISSING_P
 
 ## Honest limits
 - The scenario pack and ledger are synthetic. The Airwallex sandbox holds only five funding adjustments, so live mode reads real transaction ids and runs them against a synthetic ledger.
-- The refund transfer (`POST /api/v1/transfers/create`) is implemented and unit-tested against a recorded transport, and is not executed live in this version; the demo sends refunds to a fake gateway and says so.
+- Writes go only to the sandbox (demo environment). One refund transfer (`POST /api/v1/transfers/create`) was executed after an approval card, and the request id is in `docs/live-write-*.json`; its beneficiary is a sandbox fixture named like the payer, not the simulated payer's bank. The approval was signed by an operator command, not by a customer. The demo mode still sends refunds to a fake gateway and says so.
 - Throughput was not measured beyond the bundled pack.
