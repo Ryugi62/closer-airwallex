@@ -2,7 +2,7 @@
 
 Airwallex's Builder Guide says cash placement and reconciliation are Treasury & Ops jobs "we have not written kits for". Closer takes that gap as an open policy layer that sits on top of the exception queue of tools like Xero and Leapfin: it reads Airwallex financial transactions, matches them to an invoice ledger, classifies every mismatch into one of six types, and then acts: adjust inside limits, hold behind one approval card, or escalate with a stated reason. Every amount, limit, duplicate guard and state transition is plain code with tests. No model is called in the money path today (amount, limit, duplicate and approval decisions); from the build window a model may read free-text evidence, and its output can only become a HOLD.
 
-> Status: a pre-built prototype made for the application, before the official build window. Commits made inside the official build window start on 2026-10-25; the code is frozen until then and only documents change. Public repository URL: added at submission.
+> Status: a pre-built prototype made for the application, before the official build window. Commits made inside the official build window start on 2026-10-25; the code is frozen until then and only documents change. Public repository: https://github.com/Ryugi62/closer-airwallex
 
 > Sandbox only. No real money. The invoice ledger and the scenario pack are SYNTHETIC; the transactions in `live-smoke` / `live-cycle` / `live-deposits` / `live-write` are real Airwallex sandbox (demo environment) data.
 
