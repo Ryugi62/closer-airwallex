@@ -23,7 +23,7 @@ The riskiest item on the bundled scenario is a duplicate payment: 2,500 USD paid
 ## The one number
 Items for a person: the number of invoices and bank transactions in one cycle that end held for approval or escalated, counted against the exact-match baseline exceptions (invoice id in the description, equal amount and currency, zero fee) on the same ledger and the same transactions.
 
-On the bundled synthetic scenario: 21 exceptions with exact match, 13 items for a person with Closer (8 fewer, 38.1% of exceptions).
+On the bundled synthetic scenario: 21 exceptions with exact match, 13 items for a person with Closer (8 fewer, 38.1% of exceptions). This is a synthetic logic check, not a match rate: the exact-match baseline is deliberately weak, real tools (Xero JAX, Airwallex integrations) auto-match more than it does, and Closer does not compete with them on matching. The number only shows what Closer does with the items left over after a first-pass match: type each one, decide inside limits, and put money-moving actions behind an approval.
 
 Why 8 fewer but only 7 adjusted automatically: the baseline counts an invoice and a bank transaction separately; Closer links one transaction to INV-801 by inference (never auto-adjusted), so those two baseline exceptions become one escalated item. 7 automatic adjustments + 1 merged pair = 8.
 

@@ -23,7 +23,7 @@ The riskiest item on the bundled scenario is a duplicate payment: 2,500 USD paid
 ## The one number
 {{METRIC_DEFINITION}}
 
-On the bundled synthetic scenario: {{M.baseline_exceptions}} exceptions with exact match, {{M.closer_human_items}} items for a person with Closer ({{M.roi_items_moved}} fewer, {{M.roi_share_pct}}% of exceptions).
+On the bundled synthetic scenario: {{M.baseline_exceptions}} exceptions with exact match, {{M.closer_human_items}} items for a person with Closer ({{M.roi_items_moved}} fewer, {{M.roi_share_pct}}% of exceptions). This is a synthetic logic check, not a match rate: the exact-match baseline is deliberately weak, real tools (Xero JAX, Airwallex integrations) auto-match more than it does, and Closer does not compete with them on matching. The number only shows what Closer does with the items left over after a first-pass match: type each one, decide inside limits, and put money-moving actions behind an approval.
 
 Why {{M.roi_items_moved}} fewer but only {{M.auto_adjusted}} adjusted automatically: the baseline counts an invoice and a bank transaction separately; Closer links one transaction to INV-801 by inference (never auto-adjusted), so those two baseline exceptions become one escalated item. {{M.auto_adjusted}} automatic adjustments + 1 merged pair = {{M.roi_items_moved}}.
 
