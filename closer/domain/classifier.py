@@ -51,6 +51,7 @@ def classify(invoices: Sequence[Invoice], txns: Sequence[BankTxn], as_of: date, 
     findings: List[Finding] = []
     invoices = sorted(invoices, key=lambda i: i.id)
     settled = sorted([t for t in txns if t.settled], key=lambda t: (t.created_at, t.id))
+    in_flight = sorted([t for t in txns if t.in_transit], key=lambda t: t.id)
     for t in sorted([t for t in txns if not t.settled], key=lambda t: t.id):
         findings.append(Finding(None, M.NOT_SETTLED, (t.id,), None, Decimal("0"), t.currency))
     by_inv, link_kind, unmatched = _link(invoices, settled)
@@ -61,7 +62,9 @@ def classify(invoices: Sequence[Invoice], txns: Sequence[BankTxn], as_of: date, 
         if not linked:
             kind = M.MISSING_PAYMENT if inv.due_date < as_of else M.NOT_DUE
             diff = inv.expected_amount if kind == M.MISSING_PAYMENT else Decimal("0")
-            findings.append(Finding(inv.id, kind, (), None, diff, cur))
+            moving = tuple(t.id for t in in_flight if _mentions(t, inv.id) and _direction(t) == inv.direction) \
+                if kind == M.MISSING_PAYMENT else ()
+            findings.append(Finding(inv.id, kind, moving, None, diff, cur))
             continue
         ids = tuple(t.id for t in linked)
         link = link_kind[inv.id]

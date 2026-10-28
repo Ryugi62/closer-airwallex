@@ -79,6 +79,10 @@ class BankTxn:
     def settled(self) -> bool:
         return self.status == "SETTLED"
 
+    @property
+    def in_transit(self) -> bool:
+        return self.status in ("PENDING", "PROCESSING")
+
 
 @dataclass(frozen=True)
 class Finding:

@@ -55,6 +55,9 @@ def decide(findings: Sequence[Finding], invoices: Sequence[Invoice], policy: Pol
             action, rule = Action.HOLD_FOR_APPROVAL, "R-DUP-1"
             reason = "%d settled transactions for one invoice; surplus %.2f %s needs approval to refund" % (len(f.txn_ids), amount, cur)
             card = ApprovalCard("REFUND_SURPLUS", f.invoice_id or "", amount, cur, counterparty, tuple(f.txn_ids))
+        elif f.mismatch == M.MISSING_PAYMENT and f.txn_ids:
+            action, rule = Action.HOLD_FOR_APPROVAL, "R-LATE-1"
+            reason = "invoice past due, but payment %s naming it is still in transit; confirm before dunning" % ", ".join(f.txn_ids)
         elif f.mismatch == M.MISSING_PAYMENT:
             action, rule = Action.ESCALATE, "R-MISS-1"
             reason = "invoice past due with no settled transaction; dunning proposal for a person"

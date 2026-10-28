@@ -42,7 +42,7 @@ The change in outcome: an item that a spreadsheet exact-match leaves as an "exce
 3. Given an invoice quoted 1,000.00 EUR settled in USD at quoted rate 1.0800 (expected 1,080.00) and a txn of 1,074.00 USD. When the cycle runs. Then FX_DIFFERENCE with drift 0.56%; within FX tolerance and limit => AUTO_ADJUST (FX loss entry); beyond => ESCALATE.
 4. Given one invoice and two SETTLED txns of the same amount both referencing it. When the cycle runs. Then DUPLICATE_PAYMENT, action HOLD_FOR_APPROVAL with a refund proposal for the surplus; nothing executes until a matching approval is presented.
 5. Given a HELD refund and an approval produced for a different amount, currency, counterparty or evidence set. When execution is attempted. Then it is rejected and the audit shows `APPROVAL_MISMATCH`.
-6. Given an IN invoice past its due date with no txn. When the cycle runs. Then MISSING_PAYMENT, action ESCALATE with a dunning proposal. An invoice not yet due produces no mismatch.
+6. Given an IN invoice past its due date with no txn. When the cycle runs. Then MISSING_PAYMENT, action ESCALATE with a dunning proposal. An invoice not yet due produces no mismatch. (If an in-transit payment names the invoice, see section 10, rule `R-LATE-1`.)
 7. Given a txn with no reference and no unique candidate. When the cycle runs. Then UNMATCHED_TXN, action ESCALATE (inbound funds are not allocated to anyone).
 8. Given an invoice and a txn smaller by an amount that is not the fee and not FX. When the cycle runs. Then AMOUNT_MISMATCH; <= rounding tolerance => AUTO_ADJUST (rounding), otherwise ESCALATE.
 9. Given auto-adjustments whose sum would exceed the per-currency cycle cap. When the cycle runs. Then the item that would breach the cap is ESCALATED, never executed.
@@ -111,5 +111,7 @@ Honesty rules: the transaction id, currency and amount are real only when read f
 Given / When / Then
 1. Given an anchor transaction SETTLED and an invoice for the same amount due 2026-11-10, as-of 2026-11-09. When the cycle runs. Then `R-OK-1`, invoice CLOSED.
 2. Given the same, transaction status changed to PENDING (delay), as-of unchanged. When the cycle runs. Then `R-OK-2` NONE (not yet due; the pending transaction is excluded), invoice OPEN.
-3. Given the same, as-of changed to 2026-11-12. When the cycle runs. Then `R-MISS-1` ESCALATE, invoice ESCALATED, transfers sent 0.
-Verified by: tests/test_late_flow.py.
+3. Given the same, as-of changed to 2026-11-12. When the cycle runs. Then `R-LATE-1` HOLD_FOR_APPROVAL without a card (outcome `PENDING_PERSON_REVIEW`, invoice HELD): the invoice is past due, but a PENDING or PROCESSING transaction that names it and has the invoice's direction is on its way, so confirm before dunning. Executor called 0 times.
+4. Given the same, but no transaction at all (nothing is on its way). When the cycle runs. Then `R-MISS-1` ESCALATE, invoice ESCALATED, transfers sent 0.
+5. Given an overdue invoice and an in-transit transaction that does not name it, or one whose status is FAILED. When the cycle runs. Then `R-MISS-1` ESCALATE (only a referenced, in-flight payment holds a dunning).
+Verified by: tests/test_late_flow.py, tests/test_in_transit_hold.py (rule `R-LATE-1` is a refinement of `MISSING_PAYMENT`, not a seventh mismatch type: the finding carries the in-transit transaction ids).

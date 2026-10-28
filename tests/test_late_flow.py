@@ -23,19 +23,19 @@ def test_pick_anchor_falls_back_to_labelled_synthetic():
     assert pick_anchor([_t("ftx_out", "-5")]) is SYNTHETIC_TXN and SYNTHETIC_TXN.id.startswith("syn_")
 
 
-def test_three_frames_end_in_escalation_when_txn_is_late_and_due_passes():
+def test_four_frames_hold_while_payment_is_in_transit_and_escalate_only_when_nothing_is_coming():
     frames = build_late_flow([_t("ftx_ok", "1250.00")])
-    assert [f.action for f in frames] == ["NONE", "NONE", "ESCALATE"]
-    assert [f.rule for f in frames] == ["R-OK-1", "R-OK-2", "R-MISS-1"]
-    assert frames[0].state == "CLOSED" and frames[2].state == "ESCALATED"
-    assert frames[2].outcome == "ESCALATED"
+    assert [f.action for f in frames] == ["NONE", "NONE", "HOLD_FOR_APPROVAL", "ESCALATE"]
+    assert [f.rule for f in frames] == ["R-OK-1", "R-OK-2", "R-LATE-1", "R-MISS-1"]
+    assert frames[0].state == "CLOSED" and frames[2].state == "HELD" and frames[3].state == "ESCALATED"
+    assert frames[2].outcome == "PENDING_PERSON_REVIEW" and frames[3].outcome == "ESCALATED"
     assert all(f.anchor_id == "ftx_ok" for f in frames)
 
 
 def test_only_the_stated_input_changes_between_frames():
-    a, b, c = build_late_flow([_t("ftx_ok", "1250.00")])
+    a, b, c, d = build_late_flow([_t("ftx_ok", "1250.00")])
     assert (a.txn_status, b.txn_status, c.txn_status) == ("SETTLED", "PENDING", "PENDING")
-    assert a.as_of == b.as_of and b.as_of < c.as_of
+    assert a.as_of == b.as_of and b.as_of < c.as_of == d.as_of
     assert c.amount == "1250.00 USD"
 
 
@@ -50,4 +50,4 @@ def test_render_labels_what_is_real_and_what_is_simulated():
 def test_cli_late_runs_offline_and_ends_escalated():
     p = subprocess.run([sys.executable, "-m", "closer", "late", "--offline"], cwd=ROOT, capture_output=True, text=True, timeout=30)
     assert p.returncode == 0, p.stderr
-    assert "ESCALATE" in p.stdout and "R-MISS-1" in p.stdout and "transfers sent: 0" in p.stdout
+    assert "R-LATE-1" in p.stdout and "ESCALATE" in p.stdout and "R-MISS-1" in p.stdout and "transfers sent: 0" in p.stdout
