@@ -1,4 +1,4 @@
-"""Composition root + CLI. `python3 -m closer <evidence|demo|metrics|scenes|card|reconcile|live-smoke|live-cycle|live-deposits|live-write|readme>`."""
+"""Composition root + CLI. `python3 -m closer <evidence|demo|metrics|scenes|late|card|reconcile|live-smoke|live-cycle|live-deposits|live-write|readme>`."""
 from __future__ import annotations
 
 import json
@@ -224,6 +224,16 @@ def cmd_scenes() -> int:
     return 0
 
 
+def cmd_late(argv) -> int:
+    from closer.adapters.late_flow import build_late_flow, render_late_flow
+    gw = None if "--offline" in argv else _gateway()
+    txns = gw.list_transactions() if gw else []
+    frames = build_late_flow(txns)
+    print(render_late_flow(frames, live=gw is not None), end="")
+    print("(transfers sent: 0)")
+    return 0
+
+
 def cmd_card() -> int:
     from closer.adapters.card_html import render_card
     invoices, txns, as_of, policy = scenario_pack()
@@ -282,10 +292,12 @@ def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if argv and argv[0] == "reconcile":
         return cmd_reconcile(argv[1:])
+    if argv and argv[0] == "late":
+        return cmd_late(argv[1:])
     if argv and argv[0] == "evidence":
         return cmd_evidence(argv[1:])
     cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "scenes": cmd_scenes, "card": cmd_card, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "live-deposit": cmd_live_deposit, "live-deposits": cmd_live_deposits, "live-write": cmd_live_write, "readme": cmd_readme}
     if not argv or argv[0] not in cmds:
-        print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile", "evidence"})))
+        print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile", "evidence", "late"})))
         return 2
     return cmds[argv[0]]()

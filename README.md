@@ -53,7 +53,7 @@ Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_
 ```
 git clone <this repo> && cd airwallex-agentic-banking-2026   # (public URL added at submission)
 python3 -m pip install pytest
-python3 -m pytest -q          # 125 tests, no network
+python3 -m pytest -q          # 131 tests, no network
 python3 -m closer demo        # full cycle, approval, replay, audit log
 ```
 Tested on Python 3.9.6 (other versions not tested), standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.

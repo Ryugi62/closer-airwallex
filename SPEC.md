@@ -103,3 +103,13 @@ Given / When / Then
 7. Given no Gemini key. When the Gemini adapter is built. Then it raises `EvidenceKeyMissing` naming where the key is read from, and no request is made.
 Verified by: tests/domain/test_evidence.py, tests/application/test_evidence_cycle.py, tests/adapters/test_gemini_evidence.py; S3 (test_architecture.py) still holds: `domain/` and `application/` import no SDK or network module; only `adapters/` talks to Gemini.
 Non-goals: the model does not classify mismatches, does not move any amount, and is not called when there is no evidence text. Real model calls are not part of the test suite.
+
+## 10. Late-payment flow (지연·기한 경과 장면) — build window
+Purpose: one live-read scene where a delayed transaction and a passed due date end in an escalation to a person. Command: `python3 -m closer late` (`--offline` skips the sandbox read). Ubiquitous language: **anchor transaction** (first settled inbound transaction without fee in the read; a labelled synthetic one if the read has none or is skipped), **Frame** (one cycle run with one changed input).
+Honesty rules: the transaction id, currency and amount are real only when read from the sandbox; the invoice `LATE-1` and its due date are SYNTHETIC; the delay is SIMULATED (status forced to PENDING) because the sandbox does not produce late transactions on demand. The output header says so. No transfer is ever sent.
+
+Given / When / Then
+1. Given an anchor transaction SETTLED and an invoice for the same amount due 2026-11-10, as-of 2026-11-09. When the cycle runs. Then `R-OK-1`, invoice CLOSED.
+2. Given the same, transaction status changed to PENDING (delay), as-of unchanged. When the cycle runs. Then `R-OK-2` NONE (not yet due; the pending transaction is excluded), invoice OPEN.
+3. Given the same, as-of changed to 2026-11-12. When the cycle runs. Then `R-MISS-1` ESCALATE, invoice ESCALATED, transfers sent 0.
+Verified by: tests/test_late_flow.py.
