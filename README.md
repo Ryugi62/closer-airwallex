@@ -60,7 +60,7 @@ Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_
 git clone https://github.com/Ryugi62/closer-airwallex && cd closer-airwallex
 python3 -m venv .venv && . .venv/bin/activate
 pip install pytest
-python -m pytest -q          # 140 tests, no network
+python -m pytest -q          # 141 tests, no network
 python -m closer demo        # full cycle, approval, replay, audit log
 ```
 Tested on Python 3.9.6, 3.11 and 3.12, in a fresh venv (macOS arm64; Linux and Windows not tested), standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.

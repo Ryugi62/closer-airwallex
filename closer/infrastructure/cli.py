@@ -32,6 +32,17 @@ def _print_table(r):
                                                            "%.2f" % d.amount, d.currency))
 
 
+def summary_line(r) -> str:
+    """One footer line so rows with action NONE (closed, not printed) are not invisible."""
+    counts = {}
+    for d, _ in r.outcomes:
+        counts[d.action.value] = counts.get(d.action.value, 0) + 1
+    parts = ", ".join("%d %s" % (n, a) for a, n in sorted(counts.items(), key=lambda kv: (kv[0] == "NONE", kv[0])))
+    none = ["%s %s" % (d.subject_id, d.finding.mismatch.value) for d, _ in r.outcomes if d.action.value == "NONE"]
+    tail = ("  | not listed (nothing to do): " + ", ".join(none)) if none else ""
+    return "-- %d decisions: %s%s" % (len(r.outcomes), parts, tail)
+
+
 def cmd_demo() -> int:
     invoices, txns, as_of, policy = scenario_pack()
     ben = {i.counterparty: "ben-" + i.id for i in invoices}
@@ -107,6 +118,7 @@ def cmd_live_cycle() -> int:
     print("== live-cycle: TRANSACTIONS = Airwallex sandbox (%d read) ; LEDGER = SYNTHETIC data/live_ledger.csv ==" % len(txns))
     r = run_cycle("LIVE-%s" % date.today().isoformat(), date.today(), invoices, txns, policy, ex, store, audit, appr)
     _print_table(r)
+    print(summary_line(r))
     return 0
 
 
