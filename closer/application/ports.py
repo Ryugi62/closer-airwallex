@@ -27,3 +27,8 @@ class ApprovalSource(Protocol):
 class Explainer(Protocol):
     """The only place a model may be used: wording an exception. Never decides."""
     def explain(self, decision: Decision) -> str: ...
+
+
+class EvidenceReader(Protocol):
+    """Model behind a port: free text in, raw reply out. Its reply is untrusted and parsed in the domain."""
+    def read(self, text: str) -> str: ...

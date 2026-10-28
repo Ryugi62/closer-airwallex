@@ -3,16 +3,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, Mapping, List, Optional, Sequence, Tuple
 
 from closer.domain.approval import verify
 from closer.domain.classifier import classify
 from closer.domain.decision import Decision, decide
+from closer.domain.evidence import EvidenceReading, apply_evidence, parse_reading
 from closer.domain.models import Action, AuditEntry, BankTxn, Invoice, MismatchType as M
 from closer.domain.policy import Policy
 from closer.domain.state import InvoiceState as S, transition
 
-from .ports import ApprovalSource, AuditSink, Executor, Explainer, KeyStore
+from .ports import ApprovalSource, AuditSink, EvidenceReader, Executor, Explainer, KeyStore
 
 
 @dataclass
@@ -34,13 +35,28 @@ def _advance(state: S, path: Sequence[S]) -> S:
     return state
 
 
+def _with_evidence(d: Decision, evidence: Mapping[str, str], reader: EvidenceReader) -> Decision:
+    text = evidence.get(d.subject_id)
+    if not text or d.action in (Action.HOLD_FOR_APPROVAL, Action.ESCALATE):
+        return d
+    try:
+        reading = parse_reading(reader.read(text), text)
+    except Exception as e:  # any reader failure fails closed
+        reading = EvidenceReading(None, "reader failed: %s: %s" % (type(e).__name__, str(e)[:120]))
+    return apply_evidence(d, reading)
+
+
 def run_cycle(cycle_id: str, as_of: date, invoices: Sequence[Invoice], txns: Sequence[BankTxn],
               policy: Policy, executor: Executor, store: KeyStore, audit: AuditSink,
               approvals: Optional[ApprovalSource] = None, explainer: Optional[Explainer] = None,
-              verifier: Optional[Callable] = None) -> CycleResult:
+              verifier: Optional[Callable] = None,
+              evidence: Optional[Mapping[str, str]] = None,
+              evidence_reader: Optional[EvidenceReader] = None) -> CycleResult:
     explainer = explainer or _PlainExplainer()
     findings = classify(invoices, txns, as_of, policy)
     decisions = decide(findings, invoices, policy)
+    if evidence and evidence_reader is not None:
+        decisions = [_with_evidence(d, evidence, evidence_reader) for d in decisions]
     result = CycleResult(cycle_id=cycle_id, decisions=decisions, states={i.id: S.OPEN for i in invoices})
 
     for d in decisions:
@@ -61,6 +77,8 @@ def run_cycle(cycle_id: str, as_of: date, invoices: Sequence[Invoice], txns: Seq
         elif d.action == Action.ESCALATE:
             store.add(d.idempotency_key)
             outcome, new_state = "ESCALATED", (S.ESCALATED,)
+        elif d.action == Action.HOLD_FOR_APPROVAL and d.card is None:
+            outcome, new_state = "PENDING_PERSON_REVIEW", (S.HELD,)
         elif d.action == Action.HOLD_FOR_APPROVAL:
             approval = approvals.find(d.finding.invoice_id or "") if approvals else None
             if approval is None:

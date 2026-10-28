@@ -1,4 +1,4 @@
-"""Composition root + CLI. `python3 -m closer <demo|metrics|scenes|card|reconcile|live-smoke|live-cycle|live-deposits|live-write|readme>`."""
+"""Composition root + CLI. `python3 -m closer <evidence|demo|metrics|scenes|card|reconcile|live-smoke|live-cycle|live-deposits|live-write|readme>`."""
 from __future__ import annotations
 
 import json
@@ -246,12 +246,46 @@ def cmd_readme() -> int:
     return 0
 
 
+def _gemini_key():
+    key = os.environ.get("GEMINI_API_KEY")
+    path = os.path.expanduser("~/.config/jarvis/env/gemini.env")
+    if not key and os.path.exists(path):
+        for line in open(path):
+            if line.startswith("GEMINI_API_KEY="):
+                key = line.split("=", 1)[1].strip().strip("'\"")
+    return key
+
+
+def cmd_evidence(argv) -> int:
+    """evidence <subject-id> <free text>: run the demo pack with the Gemini reader on that subject's evidence."""
+    from closer.adapters.gemini_evidence import EvidenceKeyMissing, GeminiEvidenceReader
+    if len(argv) != 2:
+        print('usage: python3 -m closer evidence <subject-id> "<free text>"')
+        return 2
+    try:
+        reader = GeminiEvidenceReader(_gemini_key())
+    except EvidenceKeyMissing as e:
+        print("cannot read evidence: %s" % e)
+        return 3
+    invoices, txns, as_of, policy = scenario_pack()
+    ex, store, _, appr = new_runtime({i.counterparty: "ben-" + i.id for i in invoices})
+    print("== evidence reading ==  " + LABEL + " ; subject=%s ; model output can only become a HOLD" % argv[0])
+    r = run_cycle("EVD-1", as_of, invoices, txns, policy, ex, store, ListAuditSink(), appr,
+                  evidence={argv[0]: argv[1]}, evidence_reader=reader)
+    for d, o in r.outcomes:
+        if d.subject_id == argv[0]:
+            print("%s -> %s / %s via %s: %s (transfers sent: %d)" % (d.subject_id, d.action.value, o, d.rule_id, d.reason, len(ex.gateway.sent)))
+    return 0
+
+
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if argv and argv[0] == "reconcile":
         return cmd_reconcile(argv[1:])
+    if argv and argv[0] == "evidence":
+        return cmd_evidence(argv[1:])
     cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "scenes": cmd_scenes, "card": cmd_card, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "live-deposit": cmd_live_deposit, "live-deposits": cmd_live_deposits, "live-write": cmd_live_write, "readme": cmd_readme}
     if not argv or argv[0] not in cmds:
-        print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile"})))
+        print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile", "evidence"})))
         return 2
     return cmds[argv[0]]()

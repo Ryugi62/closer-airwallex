@@ -82,3 +82,24 @@ Given / When / Then
 2. Given the same card signed with the executor key (role `executor`). When execution is attempted. Then it is rejected as `APPROVAL_SIGNATURE_INVALID` and the gateway is not called.
 3. Given an approver-signed approval whose card digest is changed by one byte. When execution is attempted. Then it is rejected as `APPROVAL_SIGNATURE_INVALID` and the gateway is not called.
 Verified by: tests/domain/test_signing.py, tests/application/test_signed_execution.py, tests/test_cli_demo.py.
+
+## 9. Model evidence reading (모델 증거 읽기) — build window
+Purpose: payers and operators send free text ("we already paid this twice, please refund one", "fee note: bank took 23.50"). A model may read that text and extract **facts**. Facts can only make a decision *stricter*: the output of the reading is `HOLD_FOR_APPROVAL` for a person, never an execution. The model never sees amounts to decide with, never picks an action, and never produces a card.
+Ubiquitous language: **EvidenceText** (raw free text tied to one subject id), **EvidenceFacts** (claim type, optional amount, currency, promised date, verbatim quote), **EvidenceReader** (port: text in, raw model reply out), **EvidenceReading** (facts or a failure reason), rule ids `R-EVD-1` (evidence disputes or asks refund), `R-EVD-2` (evidence figure disagrees with the ledger), `R-EVD-3` (reading unusable: fail closed).
+Rules
+- The only schema the reply may fill: `claim` in {DISPUTE, REFUND_REQUEST, PAYMENT_CLAIMED, PROMISE_TO_PAY, FEE_NOTE, OTHER}, `amount`, `currency`, `promised_date`, `quote`. Any other key (for example `action`) is ignored.
+- A `quote` that is not a substring of the evidence text (whitespace and case normalised) makes the reading unusable (guards against invented facts and injected instructions).
+- Evidence can turn `AUTO_ADJUST` or `NONE` into `HOLD_FOR_APPROVAL`; it can never turn `HOLD_FOR_APPROVAL` or `ESCALATE` into anything less strict, and never produces `AUTO_ADJUST`, `EXECUTED` or an `ApprovalCard`.
+- A held-by-evidence decision has no card, so it is never executable (outcome `PENDING_PERSON_REVIEW`).
+- A reader failure (no key, network, bad JSON) on a subject that has evidence text fails closed to `R-EVD-3` HOLD; the CLI says plainly when the key is missing.
+
+Given / When / Then
+1. Given an `AUTO_ADJUST` fee decision (23.50 USD) and evidence "Please refund, we dispute this fee" read as DISPUTE. When the cycle runs with the reader. Then action `HOLD_FOR_APPROVAL`, rule `R-EVD-1`, executor called 0 times, evidence quote in the audit explanation.
+2. Given an `AUTO_ADJUST` decision of 23.50 USD and evidence read as FEE_NOTE amount 23.50 USD. When the cycle runs. Then the decision is unchanged (`AUTO_ADJUST`): agreeing evidence does not promote or demote anything.
+3. Given the same decision and evidence read as FEE_NOTE amount 99.00 USD. When the cycle runs. Then `HOLD_FOR_APPROVAL`, rule `R-EVD-2`.
+4. Given a model reply with an extra `"action": "AUTO_ADJUST"` key, or a quote not present in the text, or invalid JSON, or a reader that raises. When the cycle runs. Then the extra key is ignored; the other three give `R-EVD-3` HOLD; executor called 0 times.
+5. Given a base decision `ESCALATE` or `HOLD_FOR_APPROVAL` (with card). When any evidence is read. Then the decision is returned unchanged (card intact).
+6. Given a subject with no evidence text. When the cycle runs. Then the reader is not called and the decision is unchanged.
+7. Given no Gemini key. When the Gemini adapter is built. Then it raises `EvidenceKeyMissing` naming where the key is read from, and no request is made.
+Verified by: tests/domain/test_evidence.py, tests/application/test_evidence_cycle.py, tests/adapters/test_gemini_evidence.py; S3 (test_architecture.py) still holds: `domain/` and `application/` import no SDK or network module; only `adapters/` talks to Gemini.
+Non-goals: the model does not classify mismatches, does not move any amount, and is not called when there is no evidence text. Real model calls are not part of the test suite.
