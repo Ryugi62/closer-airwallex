@@ -15,6 +15,10 @@ Airwallex's Builder Guide says cash placement and reconciliation are Treasury & 
 | QuickBooks / Tipalti / JustPerform (GBP 7-115 or USD 20-129 per month) | Rule-based matching, payables or account-reconciliation workflows | Every exception | Same as above |
 | Leapfin (vendor home page, opened 2026-10-28: "automate reconciliation", Stripe reconciliation, AI assistant) and Airwallex (acquisition announced 2026-06-04 in the Airwallex newsroom) | Leapfin sells automated reconciliation itself; the Airwallex release says the companies "plan to launch new product capabilities in the coming months"; an Airwallex-native release is not announced in what I opened, and I have not tested either | Mismatch handling inside them is not verified | An open, testable policy layer that can sit on top of such an exception queue: every limit and transition is a test; no model in the money path |
 | HighRadius cash application (enterprise; vendor product page, opened 2026-10-20) | "Automated GL write-off uses configurable rules to write off items like bank fees, FX, and low-dollar deductions to specific GL accounts" | Items outside the configured limits | Fee, FX and small-difference write-off under limits is not unique to Closer (enterprise tools do it). What Closer adds is open code on Airwallex APIs, and duplicate refunds behind a separate approver-key signature with 0 extra executions in 20 replays |
+| End Close (YC W26, AI ops agent; YC company page, opened 2026-10-28: "triage and resolve issues without human intervention") | Sells exception handling: an agent connects to the data warehouse, invoicing platform and payment processors and resolves reconciliation exceptions | Which exceptions must never be resolved without a person is the vendor's setting; its code is not public and I have not tested it | The opposite emphasis: Closer proves which items must not be automated, in open code on Airwallex APIs. A duplicate refund moves only with a card signed by a separate approver key, and a model can only make a decision stricter |
+| AutoRek ARIA (press release 2025-09-09, seen as a search summary only; I could not open the page) | Reconciliation break triage and "supervised resolution" with escalation | Mismatch rules sit inside a closed enterprise product | Same as above: limits, approver keys and replay safety as tests anyone can run, with no key needed |
+They resolve exceptions automatically; Closer proves which ones must not be, on Airwallex APIs, in open code.
+
 The claim is narrow: matching is done by others (Xero JAX does it at scale). Closer is the decision and approval step for what matching leaves: a type, a limit, one approval card, separate approver and executor keys. Not a better match rate. Eight source types and the full table: `docs/COMPETITORS.md`.
 
 ## What it prevents
@@ -41,14 +45,16 @@ python3 -m closer card      # writes docs/approval-card.html (capture: docs/appr
 ```
 Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_currency,quoted_rate]`. Transaction columns: `id,currency,amount,fee,status,description,created_at`. Change the files or `--item-limit` / `--cycle-cap` and the decisions change. Refunds go to a fake gateway.
 
-## Run it in 3 minutes (3 commands plus a one-line pytest install, no key needed)
+## Run it in 3 minutes (no key needed)
+`python3 -m closer demo` needs no install at all. To run the tests, make a virtual environment first (managed Pythons from uv, Homebrew or recent Linux refuse a global `pip install`, PEP 668):
 ```
 git clone https://github.com/Ryugi62/closer-airwallex && cd closer-airwallex
-python3 -m pip install pytest
-python3 -m pytest -q          # {{TESTS}} tests, no network
-python3 -m closer demo        # full cycle, approval, replay, audit log
+python3 -m venv .venv && . .venv/bin/activate
+pip install pytest
+python -m pytest -q          # {{TESTS}} tests, no network
+python -m closer demo        # full cycle, approval, replay, audit log
 ```
-Tested on Python 3.9.6, 3.11 and 3.12 (macOS arm64; Linux and Windows not tested), standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.
+Tested on Python 3.9.6, 3.11 and 3.12, in a fresh venv (macOS arm64; Linux and Windows not tested), standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.
 
 ## What it does on the bundled scenario (generated values)
 | Measure | Value |
@@ -79,7 +85,7 @@ Mismatch types: `FEE_DEDUCTED`, `FX_DIFFERENCE`, `DUPLICATE_PAYMENT`, `MISSING_P
 - `HOLD_FOR_APPROVAL` without a card (`R-LATE-1`) for an overdue invoice when a PENDING or PROCESSING transaction naming it is on its way: confirm before dunning (`python3 -m closer late` shows the four frames). With no such transaction the overdue invoice is escalated (`R-MISS-1`).
 - `ESCALATE` for everything else, with the rule id and reason in the audit log.
 - Idempotency: each decision has a key; a key executes once. Replays are skipped and audited.
-- Model evidence reading (SPEC section 9): free text attached to an item (a payer's note, a dispute) is read by a model behind the `EvidenceReader` port (Gemini adapter in `adapters/`). The reply is parsed into a fixed set of facts (claim type, amount, currency, date, a verbatim quote that must appear in the text); any other key is ignored. Facts can only turn an `AUTO_ADJUST` into a card-less `HOLD_FOR_APPROVAL` for a person (rules `R-EVD-1/2/3`); a held item cannot be approved by signature because it has no card, and an unreadable reply or a failing model fails closed to a hold. Try it: `python3 -m closer evidence INV-203 "we dispute the 23.50 USD fee"` (needs a Gemini key; says so if missing).
+- Model evidence reading (SPEC section 9): free text attached to an item (a payer's note, a dispute) is read by a model behind the `EvidenceReader` port (Claude and Gemini adapters in `adapters/`). The reply is parsed into a fixed set of facts (claim type, amount, currency, date, a verbatim quote that must appear in the text); any other key is ignored. Facts can only turn an `AUTO_ADJUST` into a card-less `HOLD_FOR_APPROVAL` for a person (rules `R-EVD-1/2/3`); a held item cannot be approved by signature because it has no card, and an unreadable reply or a failing model fails closed to a hold. Try it: `python3 -m closer evidence INV-203 "we dispute the 23.50 USD fee"` (uses `ANTHROPIC_API_KEY` or the macOS keychain item for Claude, else a Gemini key; says so if both are missing; a successful run is saved as `docs/evidence-<time>.json`).
 - A model may be plugged in through the `Explainer` port to word an exception. It cannot change an amount or an action (checked by an import test on `domain/` and `application/`).
 
 ## Layout
@@ -89,5 +95,5 @@ Mismatch types: `FEE_DEDUCTED`, `FX_DIFFERENCE`, `DUPLICATE_PAYMENT`, `MISSING_P
 - The scenario pack and ledger are synthetic. The Airwallex sandbox holds only five funding adjustments, so live mode reads real transaction ids and runs them against a synthetic ledger.
 - Writes go only to the sandbox (demo environment). One refund transfer (`POST /api/v1/transfers/create`) was executed after an approval card, and the request id is in `docs/live-write-*.json`; its beneficiary is a sandbox fixture named like the payer, not the simulated payer's bank. That one-off write was approved by an operator command, not by a customer; since then the approval is an HMAC-SHA256 signature made with a separate approver key (SPEC section 8): the executor side only verifies, a card signed with the executor key or with a one-byte-different digest is rejected as `APPROVAL_SIGNATURE_INVALID` and moves nothing. HMAC is symmetric, so the executor verifies through the approver-side verify call rather than holding the key; an asymmetric scheme (ed25519) would need a new dependency and is not built. The demo mode still sends refunds to a fake gateway and says so.
 - The invoice references in the six live deposits were written by me; how often real payers include an invoice id is not measured, and without one Closer escalates instead of adjusting. The ledger is synthetic; a customer export in Xero's format is not built.
-- Evidence reading was run live once on one synthetic item (a dispute note on INV-203, held as `R-EVD-1`); a first attempt a minute earlier failed on the model side and was held by the fail-closed rule. Extraction accuracy over many real messages is not measured.
+- Evidence reading was run live with Claude (`claude-haiku-4-5`) on one synthetic item (a dispute note on INV-203, held as `R-EVD-1`); the saved log is `docs/evidence-20261028T142905Z.json`. An earlier Gemini attempt failed with HTTP 429 and was held by the fail-closed rule (`R-EVD-3`). Extraction accuracy over many real messages is not measured.
 - Throughput was not measured beyond the bundled pack.

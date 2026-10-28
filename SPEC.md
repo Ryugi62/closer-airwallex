@@ -101,7 +101,7 @@ Given / When / Then
 5. Given a base decision `ESCALATE` or `HOLD_FOR_APPROVAL` (with card). When any evidence is read. Then the decision is returned unchanged (card intact).
 6. Given a subject with no evidence text. When the cycle runs. Then the reader is not called and the decision is unchanged.
 7. Given no Gemini key. When the Gemini adapter is built. Then it raises `EvidenceKeyMissing` naming where the key is read from, and no request is made.
-Verified by: tests/domain/test_evidence.py, tests/application/test_evidence_cycle.py, tests/adapters/test_gemini_evidence.py; S3 (test_architecture.py) still holds: `domain/` and `application/` import no SDK or network module; only `adapters/` talks to Gemini.
+Verified by: tests/domain/test_evidence.py, tests/application/test_evidence_cycle.py, tests/adapters/test_gemini_evidence.py, tests/adapters/test_claude_evidence.py; S3 (test_architecture.py) still holds: `domain/` and `application/` import no SDK or network module; only `adapters/` talks to Gemini or Claude.
 Non-goals: the model does not classify mismatches, does not move any amount, and is not called when there is no evidence text. Real model calls are not part of the test suite.
 
 ## 10. Late-payment flow (지연·기한 경과 장면) — build window

@@ -1,0 +1,12 @@
+{
+  "label": "SYNTHETIC scenario pack (not customer data)",
+  "at": "20261028T142905Z",
+  "model": "claude-haiku-4-5",
+  "subject": "INV-203",
+  "text": "we dispute the 23.50 USD fee",
+  "rule": "R-EVD-1",
+  "action": "HOLD_FOR_APPROVAL",
+  "outcome": "PENDING_PERSON_REVIEW",
+  "reason": "evidence DISPUTE: \"we dispute the 23.50 USD fee\"; a person decides",
+  "transfers_sent": 0
+}

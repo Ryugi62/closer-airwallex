@@ -266,25 +266,46 @@ def _gemini_key():
     return key
 
 
+def _anthropic_key():
+    """ANTHROPIC_API_KEY, else the macOS keychain item `anthropic-api-fallback`. The value is returned, never printed."""
+    from .keychain import _kc
+    return os.environ.get("ANTHROPIC_API_KEY") or _kc("anthropic-api-fallback")
+
+
+def evidence_record(subject, text, model, decision, outcome, transfers, at):
+    """The saved log of one evidence run: no key, no header, only what a reviewer needs to re-read the result."""
+    return {"label": "SYNTHETIC scenario pack (not customer data)", "at": at, "model": model, "subject": subject,
+            "text": text, "rule": decision.rule_id, "action": decision.action.value, "outcome": outcome,
+            "reason": decision.reason, "transfers_sent": transfers}
+
+
 def cmd_evidence(argv) -> int:
-    """evidence <subject-id> <free text>: run the demo pack with the Gemini reader on that subject's evidence."""
-    from closer.adapters.gemini_evidence import EvidenceKeyMissing, GeminiEvidenceReader
+    """evidence <subject-id> <free text>: run the demo pack with a model reader (Claude if a key exists, else Gemini)."""
+    from closer.adapters.claude_evidence import ClaudeEvidenceReader, MODEL as CLAUDE_MODEL
+    from closer.adapters.gemini_evidence import EvidenceKeyMissing, GeminiEvidenceReader, MODEL as GEMINI_MODEL
     if len(argv) != 2:
         print('usage: python3 -m closer evidence <subject-id> "<free text>"')
         return 2
     try:
-        reader = GeminiEvidenceReader(_gemini_key())
+        ckey = _anthropic_key()
+        reader, model = (ClaudeEvidenceReader(ckey), CLAUDE_MODEL) if ckey else (GeminiEvidenceReader(_gemini_key()), GEMINI_MODEL)
     except EvidenceKeyMissing as e:
         print("cannot read evidence: %s" % e)
         return 3
     invoices, txns, as_of, policy = scenario_pack()
     ex, store, _, appr = new_runtime({i.counterparty: "ben-" + i.id for i in invoices})
-    print("== evidence reading ==  " + LABEL + " ; subject=%s ; model output can only become a HOLD" % argv[0])
+    print("== evidence reading ==  " + LABEL + " ; subject=%s ; model=%s ; model output can only become a HOLD" % (argv[0], model))
     r = run_cycle("EVD-1", as_of, invoices, txns, policy, ex, store, ListAuditSink(), appr,
                   evidence={argv[0]: argv[1]}, evidence_reader=reader)
     for d, o in r.outcomes:
         if d.subject_id == argv[0]:
             print("%s -> %s / %s via %s: %s (transfers sent: %d)" % (d.subject_id, d.action.value, o, d.rule_id, d.reason, len(ex.gateway.sent)))
+            if d.rule_id != "R-EVD-3":  # the reader answered; keep the log as proof
+                at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+                path = os.path.join(DOCS, "evidence-%s.json" % at)
+                with open(path, "w") as fh:
+                    json.dump(evidence_record(argv[0], argv[1], model, d, o, len(ex.gateway.sent), at), fh, indent=2)
+                print("saved docs/evidence-%s.json" % at)
     return 0
 
 
