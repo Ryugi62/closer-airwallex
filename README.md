@@ -87,16 +87,16 @@ Mismatch types: `FEE_DEDUCTED`, `FX_DIFFERENCE`, `DUPLICATE_PAYMENT`, `MISSING_P
 ## Airwallex sandbox calls (live, generated)
 | Endpoint | HTTP | Request/trace id | Items |
 |---|---|---|---|
-| `GET /api/v1/balances/current` | 200 | `d2634d1e65c44d6fbfe53dee4c434d59` | 46 |
-| `GET /api/v1/financial_transactions` | 200 | `d8aafefd6acf4fc2a0edfd01387567aa` | 27 |
-| `GET /api/v1/transfers` | 200 | `e2c45194df9146d89608e335451dabc1` | 1 |
-| `GET /api/v1/global_accounts` | 200 | `7feec294bea645aebb37367e85380a3a` | 1 |
-| `GET /api/v1/beneficiaries` | 200 | `1dca0ced26ca4082afc1144b412f4231` | 9 |
-| `GET /api/v1/deposits` | 200 | `0a16ab204e2247dbb4c0251512c47226` | 10 |
-| `GET /api/v1/fx/conversions` | 200 | `9b2b58a4245841b898dcd24ff76f6261` | 0 |
-| `GET /api/v1/balances/history` | 200 | `952bd3e051674b9cbe3d1a054abcb718` | 0 |
+| `GET /api/v1/balances/current` | 200 | `ad11521ec13b42279da3e1be862fdd50` | 46 |
+| `GET /api/v1/financial_transactions` | 200 | `f211992d00094467aa4cd1ab88b058fd` | 27 |
+| `GET /api/v1/transfers` | 200 | `491123e19da140eba687e6ae8d708a4d` | 1 |
+| `GET /api/v1/global_accounts` | 200 | `216fbb412f4546269b7476a0273e0d8f` | 1 |
+| `GET /api/v1/beneficiaries` | 200 | `182dd4bdcef3420089943f4b0edde5eb` | 9 |
+| `GET /api/v1/deposits` | 200 | `483cca5eb3c843de9e65aa823717f5f4` | 10 |
+| `GET /api/v1/fx/conversions` | 200 | `3c0fb81cd7374de2bc504d6360f5c5f1` | 0 |
+| `GET /api/v1/balances/history` | 200 | `1642c14acb9d4a248786908f9a74bc0d` | 0 |
 
-Log generated 2026-11-04T12:31:34+00:00 by `python3 -m closer live-smoke` (file: docs/endpoint-log.json). Distinct endpoints: 8.
+Log generated 2026-11-04T12:34:04+00:00 by `python3 -m closer live-smoke` (file: docs/endpoint-log.json). Distinct endpoints: 8.
 
 ## How decisions are made
 - Matching: invoice id found in the transaction description (`REFERENCE`) or a unique same-direction, same-currency candidate within 5% (`INFERRED`). An inferred link is never auto-adjusted.
