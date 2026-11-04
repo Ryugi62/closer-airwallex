@@ -85,7 +85,10 @@ def classify(invoices: Sequence[Invoice], txns: Sequence[BankTxn], as_of: date, 
             kind = M.FEE_DEDUCTED if fee > 0 else M.MATCHED
             findings.append(Finding(inv.id, kind, ids, link, fee, cur))
         else:
-            findings.append(Finding(inv.id, M.AMOUNT_MISMATCH, ids, link, expected - gross, cur))
+            short = expected - gross
+            coming = [t for t in in_flight if _mentions(t, inv.id) and _direction(t) == inv.direction and t.currency == cur]
+            on_its_way = tuple(t.id for t in coming) if coming and sum((abs(t.amount) for t in coming), Decimal("0")) == short else ()
+            findings.append(Finding(inv.id, M.AMOUNT_MISMATCH, ids, link, short, cur, in_flight=on_its_way))
 
     for t in unmatched:
         findings.append(Finding(None, M.UNMATCHED_TXN, (t.id,), None, abs(t.amount), t.currency))

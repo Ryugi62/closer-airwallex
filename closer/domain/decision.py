@@ -61,6 +61,9 @@ def decide(findings: Sequence[Finding], invoices: Sequence[Invoice], policy: Pol
         elif f.mismatch == M.MISSING_PAYMENT:
             action, rule = Action.ESCALATE, "R-MISS-1"
             reason = "invoice past due with no settled transaction; dunning proposal for a person"
+        elif f.mismatch == M.AMOUNT_MISMATCH and f.in_flight:
+            action, rule = Action.HOLD_FOR_APPROVAL, "R-PART-1"
+            reason = "part-paid: shortfall %.2f %s is exactly the in-transit payment %s naming the invoice; wait before chasing" % (amount, cur, ", ".join(f.in_flight))
         elif f.mismatch == M.UNMATCHED_TXN:
             action, rule = Action.ESCALATE, "R-UNM-1"
             reason = "transaction matches no invoice; funds are not allocated to anyone"

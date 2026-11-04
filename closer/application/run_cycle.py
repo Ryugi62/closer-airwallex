@@ -97,6 +97,6 @@ def run_cycle(cycle_id: str, as_of: date, invoices: Sequence[Invoice], txns: Seq
         result.outcomes.append((d, outcome))
         audit.append(AuditEntry(
             cycle_id=cycle_id, subject_id=d.subject_id, mismatch=mm.value, rule_id=d.rule_id,
-            evidence_txn_ids=tuple(d.finding.txn_ids), action=d.action.value, outcome=outcome,
+            evidence_txn_ids=tuple(d.finding.txn_ids) + tuple(d.finding.in_flight), action=d.action.value, outcome=outcome,
             amount="%.2f" % d.amount, currency=d.currency, explanation=explainer.explain(d)))
     return result

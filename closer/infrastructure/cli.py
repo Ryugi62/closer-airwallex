@@ -246,6 +246,15 @@ def cmd_late(argv) -> int:
     return 0
 
 
+def cmd_split(argv) -> int:
+    from closer.adapters.part_paid_flow import build_split_flow, render_split_flow
+    gw = None if "--offline" in argv else _gateway()
+    txns = gw.list_transactions() if gw else []
+    print(render_split_flow(build_split_flow(txns), live=gw is not None), end="")
+    print("(transfers sent: 0)")
+    return 0
+
+
 def cmd_card() -> int:
     from closer.adapters.card_html import render_card
     invoices, txns, as_of, policy = scenario_pack()
@@ -327,10 +336,12 @@ def main(argv=None) -> int:
         return cmd_reconcile(argv[1:])
     if argv and argv[0] == "late":
         return cmd_late(argv[1:])
+    if argv and argv[0] == "split":
+        return cmd_split(argv[1:])
     if argv and argv[0] == "evidence":
         return cmd_evidence(argv[1:])
     cmds = {"demo": cmd_demo, "metrics": cmd_metrics, "scenes": cmd_scenes, "card": cmd_card, "live-smoke": cmd_live_smoke, "live-cycle": cmd_live_cycle, "live-deposit": cmd_live_deposit, "live-deposits": cmd_live_deposits, "live-write": cmd_live_write, "readme": cmd_readme}
     if not argv or argv[0] not in cmds:
-        print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile", "evidence", "late"})))
+        print("usage: python3 -m closer <%s>" % "|".join(sorted(set(cmds) | {"reconcile", "evidence", "late", "split"})))
         return 2
     return cmds[argv[0]]()

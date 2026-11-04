@@ -115,3 +115,15 @@ Given / When / Then
 4. Given the same, but no transaction at all (nothing is on its way). When the cycle runs. Then `R-MISS-1` ESCALATE, invoice ESCALATED, transfers sent 0.
 5. Given an overdue invoice and an in-transit transaction that does not name it, or one whose status is FAILED. When the cycle runs. Then `R-MISS-1` ESCALATE (only a referenced, in-flight payment holds a dunning).
 Verified by: tests/test_late_flow.py, tests/test_in_transit_hold.py (rule `R-LATE-1` is a refinement of `MISSING_PAYMENT`, not a seventh mismatch type: the finding carries the in-transit transaction ids).
+
+## 11. Part-paid invoice flow (分割入金 · 부분 입금 장면) — build window
+Purpose: one live-read scene where an invoice is paid in two parts. The input that changes is the second part: absent, then in transit, then settled. Command: `python3 -m closer split` (`--offline` skips the sandbox read). Ubiquitous language: **first part** (the anchor transaction, real when read from the sandbox), **second part** (SYNTHETIC, created from the shortfall), **shortfall** (invoice amount minus settled sum), **in flight** (PENDING or PROCESSING transactions that name the invoice, have its direction and currency).
+Honesty rules: the first part's id, currency and amount are real only when read from the sandbox; the invoice `SPLIT-1`, its amount (first part plus second part) and the second part are SYNTHETIC; the second part's status changes are SIMULATED. The output header says so. No transfer is ever sent.
+
+Given / When / Then
+1. Given an IN invoice 1,000.00 USD and one SETTLED transaction of 600.00 naming it, nothing else. When the cycle runs. Then `AMOUNT_MISMATCH` shortfall 400.00, `R-AMT-2` ESCALATE (unchanged behaviour).
+2. Given the same, plus a PENDING or PROCESSING transaction of exactly 400.00 naming the invoice (same direction and currency). When the cycle runs. Then `R-PART-1` HOLD_FOR_APPROVAL without a card (outcome `PENDING_PERSON_REVIEW`, invoice HELD): the shortfall is exactly what is on its way, so wait before chasing. Executor called 0 times. The audit evidence lists both the settled and the in-flight ids.
+3. Given the same, but the in-flight amount is 399.00, or the transaction does not name the invoice, or its status is FAILED, or its currency differs. When the cycle runs. Then `R-AMT-2` ESCALATE (only a referenced in-flight amount equal to the shortfall holds).
+4. Given both parts SETTLED (600.00 + 400.00, no fee). When the cycle runs. Then `MATCHED`, `R-OK-1`, invoice CLOSED.
+5. Given two SETTLED parts whose sum is more than the invoice. When the cycle runs. Then `DUPLICATE_PAYMENT` as before (section 4.4).
+Verified by: tests/test_part_paid_flow.py, tests/test_part_paid_hold.py (rule `R-PART-1` refines `AMOUNT_MISMATCH`, not a seventh mismatch type: the finding carries the in-flight ids).

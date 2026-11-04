@@ -94,6 +94,7 @@ class Finding:
     currency: str
     drift_pct: Optional[Decimal] = None
     paid_currency: Optional[str] = None
+    in_flight: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

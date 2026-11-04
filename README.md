@@ -60,7 +60,7 @@ Ledger columns: `id,direction,counterparty,currency,amount,due_date[,settlement_
 git clone https://github.com/Ryugi62/closer-airwallex && cd closer-airwallex
 python3 -m venv .venv && . .venv/bin/activate
 pip install pytest
-python -m pytest -q          # 141 tests, no network
+python -m pytest -q          # 151 tests, no network
 python -m closer demo        # full cycle, approval, replay, audit log
 ```
 Tested on Python 3.9.6, 3.11 and 3.12, in a fresh venv (macOS arm64; Linux and Windows not tested), standard library only (pytest for tests). With sandbox credentials in `AIRWALLEX_CLIENT_ID` / `AIRWALLEX_API_KEY` (or the macOS keychain), `python3 -m closer live-smoke` and `python3 -m closer live-cycle` read the sandbox; `live-deposits` and `live-write` also write to it (simulation deposits, one approved refund transfer) and are never run by the tests.
@@ -87,22 +87,23 @@ Mismatch types: `FEE_DEDUCTED`, `FX_DIFFERENCE`, `DUPLICATE_PAYMENT`, `MISSING_P
 ## Airwallex sandbox calls (live, generated)
 | Endpoint | HTTP | Request/trace id | Items |
 |---|---|---|---|
-| `GET /api/v1/balances/current` | 200 | `95300604fe59406da2fc5b8c1df0e6b7` | 46 |
-| `GET /api/v1/financial_transactions` | 200 | `12f6d99ff96845dc8d94f484aec2e2b7` | 27 |
-| `GET /api/v1/transfers` | 200 | `e91c729d188b45c4a5e209f4c3a97866` | 1 |
-| `GET /api/v1/global_accounts` | 200 | `9d90c8ff86b14bd99f9a9ac2c9d2091e` | 1 |
-| `GET /api/v1/beneficiaries` | 200 | `81aa2850d12e471f8bcc2b90dd38f2e8` | 9 |
-| `GET /api/v1/deposits` | 200 | `5a19ca00736d4bdf823944fb5f2466d3` | 10 |
-| `GET /api/v1/fx/conversions` | 200 | `ad2f43efbbcf4c93b7f105eccd68b100` | 0 |
-| `GET /api/v1/balances/history` | 200 | `4bf1020444d4498eb31ba6d52909badf` | 0 |
+| `GET /api/v1/balances/current` | 200 | `d2634d1e65c44d6fbfe53dee4c434d59` | 46 |
+| `GET /api/v1/financial_transactions` | 200 | `d8aafefd6acf4fc2a0edfd01387567aa` | 27 |
+| `GET /api/v1/transfers` | 200 | `e2c45194df9146d89608e335451dabc1` | 1 |
+| `GET /api/v1/global_accounts` | 200 | `7feec294bea645aebb37367e85380a3a` | 1 |
+| `GET /api/v1/beneficiaries` | 200 | `1dca0ced26ca4082afc1144b412f4231` | 9 |
+| `GET /api/v1/deposits` | 200 | `0a16ab204e2247dbb4c0251512c47226` | 10 |
+| `GET /api/v1/fx/conversions` | 200 | `9b2b58a4245841b898dcd24ff76f6261` | 0 |
+| `GET /api/v1/balances/history` | 200 | `952bd3e051674b9cbe3d1a054abcb718` | 0 |
 
-Log generated 2026-10-28T12:37:55+00:00 by `python3 -m closer live-smoke` (file: docs/endpoint-log.json). Distinct endpoints: 8.
+Log generated 2026-11-04T12:31:34+00:00 by `python3 -m closer live-smoke` (file: docs/endpoint-log.json). Distinct endpoints: 8.
 
 ## How decisions are made
 - Matching: invoice id found in the transaction description (`REFERENCE`) or a unique same-direction, same-currency candidate within 5% (`INFERRED`). An inferred link is never auto-adjusted.
 - `AUTO_ADJUST` only if the amount is within the per-item limit, the per-currency cycle cap is not exceeded and (for FX) drift is within tolerance.
 - `HOLD_FOR_APPROVAL` for duplicate payments: a refund proposal bound to amount, currency, counterparty and evidence transaction ids. Change any of the four after approval and the approval is rejected.
 - `HOLD_FOR_APPROVAL` without a card (`R-LATE-1`) for an overdue invoice when a PENDING or PROCESSING transaction naming it is on its way: confirm before dunning (`python3 -m closer late` shows the four frames). With no such transaction the overdue invoice is escalated (`R-MISS-1`).
+- `HOLD_FOR_APPROVAL` without a card (`R-PART-1`) for a part-paid invoice when a PENDING or PROCESSING transaction naming it is on its way for exactly the shortfall: wait before chasing (`python3 -m closer split` shows three frames: escalate, hold, close). Any other shortfall stays `R-AMT-2`.
 - `ESCALATE` for everything else, with the rule id and reason in the audit log.
 - Idempotency: each decision has a key; a key executes once. Replays are skipped and audited.
 - Model evidence reading (SPEC section 9): free text attached to an item (a payer's note, a dispute) is read by a model behind the `EvidenceReader` port (Claude and Gemini adapters in `adapters/`). The reply is parsed into a fixed set of facts (claim type, amount, currency, date, a verbatim quote that must appear in the text); any other key is ignored. Facts can only turn an `AUTO_ADJUST` into a card-less `HOLD_FOR_APPROVAL` for a person (rules `R-EVD-1/2/3`); a held item cannot be approved by signature because it has no card, and an unreadable reply or a failing model fails closed to a hold. Try it: `python3 -m closer evidence INV-203 "we dispute the 23.50 USD fee"` (uses `ANTHROPIC_API_KEY` or the macOS keychain item for Claude, else a Gemini key; says so if both are missing; a successful run is saved as `docs/evidence-<time>.json`).
